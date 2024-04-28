@@ -1,10 +1,10 @@
 {
-  "id" : "com.webos.objectDetect.service",
+  "id" : "com.balance.app.service",
   "description":"External Native Service For Graphic Effect And Object Detection",
   "engine":"native",
   "executable":"objectDetect_service",
   "services": [ {
-    "name": "com.webos.objectDetect.service",
+    "name": "com.balance.app.service",
     "description": "External Native Service For Graphic Effect And Object Detection"
   }]
 }
