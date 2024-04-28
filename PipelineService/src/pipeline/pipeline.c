@@ -27,7 +27,7 @@ static void on_pad_added (GstElement *element, GstPad *pad, gpointer data) {
     g_free(name);
 }
 
-int pipeline(const char *url) {
+int objectDetectionPipeline(const char *url) {
     // Elements declaration
     GstElement *pipeline;
     GstElement *src;
