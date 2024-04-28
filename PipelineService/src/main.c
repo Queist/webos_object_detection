@@ -69,7 +69,7 @@ bool effectToFile(LSHandle *sh, LSMessage *message, void *data) {
     url = jvalue_tostring_simple(value);
 
 
-    pipeline(url)
+    pipeline(url);
     /**
      * JSON create test
      */

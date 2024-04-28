@@ -49,7 +49,7 @@ int pipeline(const char *url) {
     GstStateChangeReturn ret;
 
     // Initialize GStreamer
-    gst_init();
+    gst_init(NULL, NULL);
 
     // Create elements
     pipeline = gst_pipeline_new("obj_detection_pipeline");
