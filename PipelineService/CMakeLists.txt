@@ -46,6 +46,9 @@ include_directories(${LS2_INCLUDE_DIRS})
 pkg_check_modules(PMLOG REQUIRED PmLogLib)
 include_directories(${PMLOG_INCLUDE_DIRS})
 
+pkg_check_modules(GST REQUIRED gstreamer-1.0)
+include_directories(${GST_INCLUDE_DIRS})
+
 # ---
 # create executable file
 set(BIN_NAME objectDetect_service)
@@ -68,6 +71,7 @@ target_link_libraries (${BIN_NAME}
     ${LS2_LDFLAGS}
     ${GLIB2_LDFLAGS}
     ${PMLOG_LDFLAGS}
+    ${GST_LIBRARIES}
 )
 
 file(COPY ${CMAKE_SOURCE_DIR}/services.json DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
