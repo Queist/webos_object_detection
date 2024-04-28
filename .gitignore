@@ -17,3 +17,5 @@ Cargo.lock
 Service/BUILD/
 PipelineService/BUILD/
 **/.idea/
+
+**/cmake-build-debug/
