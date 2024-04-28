@@ -21,7 +21,6 @@
 #include <glib-object.h>
 #include <luna-service2/lunaservice.h>
 #include <pbnjson.h>
-#include "pipeline/pipeline.c"
 
 // This service name
 #define SERVICE_NAME "com.webos.objectDetect.service"
