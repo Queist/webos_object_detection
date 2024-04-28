@@ -1,0 +1,10 @@
+{
+  "id" : "com.webos.objectDetect.service",
+  "description":"External Native Service For Graphic Effect And Object Detection",
+  "engine":"native",
+  "executable":"objectDetect_service",
+  "services": [ {
+    "name": "com.webos.objectDetect.service",
+    "description": "External Native Service For Graphic Effect And Object Detection"
+  }]
+}
