@@ -100,11 +100,11 @@ int objectDetectionPipeline(const char *url) {
     g_object_set(queue0, "leaky", 2, "max-size-buffers", 2, NULL);
     g_object_set(filter1, "caps", filtercaps1, NULL);
     g_object_set(tensor_transform, "mode", 2, "option", "typecast:float32,add:-127.5,div:127.5", NULL);  // mode=arithmetic
-    g_object_set(tensor_filter, "framework", "tensorflow-lite", "model", "tflite_model/ssd_mobilenet_v2_coco.tflite", NULL);  // path issue?
+    g_object_set(tensor_filter, "framework", "tensorflow-lite", "model", "/home/root/tflite_model/ssd_mobilenet_v2_coco.tflite", NULL);  // path issue?
     g_object_set(tensor_decoder, "mode", "bounding_boxes",
                  "option1", "mobilenet-ssd",
-                 "option2", "tflite_model/coco_labels_list.txt",
-                 "option3", "tflite_model/box_priors.txt",
+                 "option2", "/home/root/tflite_model/coco_labels_list.txt",
+                 "option3", "/home/root/tflite_model/box_priors.txt",
                  "option4", "640:480",
                  "option5", "300:300", NULL);  // path issue?
     //g_object_set(compositor, "name", "mix", NULL);
