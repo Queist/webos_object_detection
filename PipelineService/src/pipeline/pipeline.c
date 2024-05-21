@@ -27,6 +27,43 @@ static void on_pad_added (GstElement *element, GstPad *pad, gpointer data) {
     g_free(name);
 }
 
+static void on_stream_status(GstBus *bus, GstMessage *message, gpointer user_data) {
+    /*TODO*/
+}
+
+static void on_error(GstBus *bus, GstMessage *message, gpointer user_data) {
+    /*TODO*/
+}
+
+static void on_eos(GstBus *bus, GstMessage *message, gpointer user_data) {
+    /*TODO*/
+}
+
+GstElement *init_src_bin(bool is_file, const char  *url) {
+    /*TODO*/
+    return NULL;
+}
+
+GstElement *init_preprocess_bin() {
+    /*TODO*/
+    return NULL;
+}
+
+GstElement *init_object_detection_bin() {
+    /*TODO*/
+    return NULL;
+}
+
+GstElement *init_gl_effect_bin(int gl_effect) {
+    /*TODO*/
+    return NULL;
+}
+
+GstElement *init_sink_bin() {
+    /*TODO*/
+    return NULL;
+}
+
 int objectDetectionPipeline(const char *url) {
     // Elements declaration
     GstElement *pipeline;
