@@ -1,10 +1,10 @@
 {
-  "id" : "com.sample.echo.service",
+  "id" : "com.balance.app.service",
   "description":"Native echo service",
   "engine":"native",
   "executable":"echo_service",
   "services": [ {
-    "name": "com.sample.echo.service",
+    "name": "com.balance.app.service",
     "description": "Native echo service"
   }]
 }
