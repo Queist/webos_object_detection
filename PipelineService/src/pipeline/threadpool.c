@@ -1,4 +1,5 @@
 #include <gst/gst.h>
+#include "threadpool.h"
 
 static void thread_pool_prepare(GstTaskPool *pool, GError **error) {
     /* TODO */

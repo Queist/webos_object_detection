@@ -15,13 +15,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <glib.h>
 #include <stdio.h>
 #include <glib-object.h>
 #include <luna-service2/lunaservice.h>
 #include <pbnjson.h>
-#include "LSCallBack.h"
+#include "LScallback.h"
 #include "util.h"
 
 // This service name

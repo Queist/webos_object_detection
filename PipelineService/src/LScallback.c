@@ -1,7 +1,9 @@
 #include <luna-service2/lunaservice.h>
 #include <pbnjson.h>
 #include <string.h>
-#include "LSCallBack.h"
+#include <stdbool.h>
+#include "LScallback.h"
+#include "pipeline/pipeline.h"
 
 
 bool effect_to_file(LSHandle *sh, LSMessage *message, void *data) {
@@ -33,7 +35,7 @@ bool effect_to_file(LSHandle *sh, LSMessage *message, void *data) {
     url = jvalue_tostring_simple(value);
     printf(url);
 
-    objectDetectionPipeline(url);
+    objectDetectionPipeline(url, true, 20);
     /**
      * JSON create test
      */

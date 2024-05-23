@@ -65,7 +65,7 @@ GstElement *init_sink_bin() {
     return NULL;
 }
 
-int objectDetectionPipeline(const char *url) {
+int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_effect) {
     // Elements declaration
     GstElement *pipeline;
     GstElement *src;
