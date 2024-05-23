@@ -21,19 +21,10 @@
 #include <glib-object.h>
 #include <luna-service2/lunaservice.h>
 #include <pbnjson.h>
-#include <PmLog.h>
 
 // This service name
 #define SERVICE_NAME "com.balance.app.service"
 #define BUF_SIZE 64
-
-static PmLogContext getPmLogContext() {
-    static PmLogContext s_context = 0;
-    if (0 == s_context) {
-        PmLogGetContext("NativeService", &s_context);
-    }
-    return s_context;
-}
 
 // Main loop for aliving background service
 GMainLoop *gmainLoop;
@@ -52,7 +43,7 @@ LSMethod sampleMethods[] = {
 };
 
 bool effect_to_file(LSHandle *sh, LSMessage *message, void *data) {
-    PmLogInfo(getPmLogContext(), "HANDLE_HELLO", 0, "hello method called");
+    printf("OK\n");
     LSError lserror;
     JSchemaInfo schemaInfo;
     jvalue_ref parsed = {0}, value = {0};
@@ -78,7 +69,7 @@ bool effect_to_file(LSHandle *sh, LSMessage *message, void *data) {
 
     // JSON Object to string without schema validation check
     url = jvalue_tostring_simple(value);
-    PmLogInfo(getPmLogContext(), "HANDLE_HELLO", 0, "hello method called");
+    printf("URL : %s\n", url);
 
     objectDetectionPipeline(url);
     /**
