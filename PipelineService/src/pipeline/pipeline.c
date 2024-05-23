@@ -27,6 +27,43 @@ static void on_pad_added (GstElement *element, GstPad *pad, gpointer data) {
     g_free(name);
 }
 
+static void on_stream_status(GstBus *bus, GstMessage *message, gpointer user_data) {
+    /*TODO*/
+}
+
+static void on_error(GstBus *bus, GstMessage *message, gpointer user_data) {
+    /*TODO*/
+}
+
+static void on_eos(GstBus *bus, GstMessage *message, gpointer user_data) {
+    /*TODO*/
+}
+
+GstElement *init_src_bin(bool is_file, const char  *url) {
+    /*TODO*/
+    return NULL;
+}
+
+GstElement *init_preprocess_bin() {
+    /*TODO*/
+    return NULL;
+}
+
+GstElement *init_object_detection_bin() {
+    /*TODO*/
+    return NULL;
+}
+
+GstElement *init_gl_effect_bin(int gl_effect) {
+    /*TODO*/
+    return NULL;
+}
+
+GstElement *init_sink_bin() {
+    /*TODO*/
+    return NULL;
+}
+
 int objectDetectionPipeline(const char *url) {
     // Elements declaration
     GstElement *pipeline;
@@ -100,11 +137,11 @@ int objectDetectionPipeline(const char *url) {
     g_object_set(queue0, "leaky", 2, "max-size-buffers", 2, NULL);
     g_object_set(filter1, "caps", filtercaps1, NULL);
     g_object_set(tensor_transform, "mode", 2, "option", "typecast:float32,add:-127.5,div:127.5", NULL);  // mode=arithmetic
-    g_object_set(tensor_filter, "framework", "tensorflow-lite", "model", "tflite_model/ssd_mobilenet_v2_coco.tflite", NULL);  // path issue?
+    g_object_set(tensor_filter, "framework", "tensorflow-lite", "model", "/home/root/tflite_model/ssd_mobilenet_v2_coco.tflite", NULL);  // path issue?
     g_object_set(tensor_decoder, "mode", "bounding_boxes",
                  "option1", "mobilenet-ssd",
-                 "option2", "tflite_model/coco_labels_list.txt",
-                 "option3", "tflite_model/box_priors.txt",
+                 "option2", "/home/root/tflite_model/coco_labels_list.txt",
+                 "option3", "/home/root/tflite_model/box_priors.txt",
                  "option4", "640:480",
                  "option5", "300:300", NULL);  // path issue?
     //g_object_set(compositor, "name", "mix", NULL);

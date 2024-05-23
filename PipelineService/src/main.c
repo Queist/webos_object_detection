@@ -34,13 +34,15 @@ LSMessage *message;
 
 // Declare of each method
 // All method format must be : bool function(LSHandle*, LSMessage*, void*)
-bool effectToFile(LSHandle *sh, LSMessage *message, void *data);
+bool effect_to_file(LSHandle *sh, LSMessage *message, void *data);
+bool stop_pipeline(LSHandle *sh, LSMessage *message, void *data);
 
 LSMethod sampleMethods[] = {
-    {"file", effectToFile},
+    {"file", effect_to_file},
+    {"stop", stop_pipeline},
 };
 
-bool effectToFile(LSHandle *sh, LSMessage *message, void *data) {
+bool effect_to_file(LSHandle *sh, LSMessage *message, void *data) {
     LSError lserror;
     JSchemaInfo schemaInfo;
     jvalue_ref parsed = {0}, value = {0};
@@ -84,6 +86,11 @@ bool effectToFile(LSHandle *sh, LSMessage *message, void *data) {
     LSMessageReply(sh, message, jvalue_tostring_simple(jobj), &lserror);
 
     j_release(&parsed);
+    return true;
+}
+
+bool stop_pipeline(LSHandle *sh, LSMessage *message, void *data) {
+    /* TODO */
     return true;
 }
 

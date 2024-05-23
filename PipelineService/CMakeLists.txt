@@ -56,6 +56,9 @@ set(BIN_NAME objectDetect_service)
 set(SRC_LIST
     ${CMAKE_SOURCE_DIR}/src/main.c
         src/pipeline/pipeline.c
+        src/utility.c
+        src/pipeline/threadpool.c
+        src/pipeline/bufferpool.c
 )
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/pkg_$ENV{OECORE_TARGET_ARCH}/")
