@@ -55,7 +55,7 @@ set(BIN_NAME objectDetect_service)
 
 set(SRC_LIST
     ${CMAKE_SOURCE_DIR}/src/main.cpp
-        src/pipeline/pipeline.cpp
+        # src/pipeline/pipeline.cpp
         # src/utility.cpp
         # src/pipeline/threadpool.cpp
         # src/pipeline/bufferpool.cpp
