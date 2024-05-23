@@ -43,7 +43,7 @@ LSMethod sampleMethods[] = {
 };
 
 bool effect_to_file(LSHandle *sh, LSMessage *message, void *data) {
-    printf("OK");
+    printf("OK\n");
     LSError lserror;
     JSchemaInfo schemaInfo;
     jvalue_ref parsed = {0}, value = {0};
@@ -69,7 +69,7 @@ bool effect_to_file(LSHandle *sh, LSMessage *message, void *data) {
 
     // JSON Object to string without schema validation check
     url = jvalue_tostring_simple(value);
-    printf(url);
+    printf("URL : %s\n", url);
 
     objectDetectionPipeline(url);
     /**
