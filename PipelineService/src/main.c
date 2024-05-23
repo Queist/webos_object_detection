@@ -34,11 +34,6 @@ GMainLoop *gmainLoop;
 LSHandle  *sh = NULL;
 LSMessage *message;
 
-// Declare of each method
-// All method format must be : bool function(LSHandle*, LSMessage*, void*)
-bool effect_to_file(LSHandle *sh, LSMessage *message, void *data);
-bool stop_pipeline(LSHandle *sh, LSMessage *message, void *data);
-
 LSMethod sampleMethods[] = {
     {"file", effect_to_file},
     {"camera", effect_to_camera},

@@ -2,7 +2,7 @@
 #include <pbnjson.h>
 #include "util.h"
 
-bool parse_message(LSMessage *message, const char *url, bool *od, int *gl_effect) {
+bool parse_ls_message(LSMessage *message, const char *url, bool *od, int *gl_effect) {
     /* TODO */
     return true;
 }
