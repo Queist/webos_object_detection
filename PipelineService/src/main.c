@@ -15,12 +15,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <glib.h>
 #include <stdio.h>
 #include <glib-object.h>
 #include <luna-service2/lunaservice.h>
 #include <pbnjson.h>
+#include "LScallback.h"
+#include "util.h"
 
 // This service name
 #define SERVICE_NAME "com.balance.app.service"
@@ -32,68 +35,11 @@ GMainLoop *gmainLoop;
 LSHandle  *sh = NULL;
 LSMessage *message;
 
-// Declare of each method
-// All method format must be : bool function(LSHandle*, LSMessage*, void*)
-bool effect_to_file(LSHandle *sh, LSMessage *message, void *data);
-bool stop_pipeline(LSHandle *sh, LSMessage *message, void *data);
-
 LSMethod sampleMethods[] = {
     {"file", effect_to_file},
+    {"camera", effect_to_camera},
     {"stop", stop_pipeline},
 };
-
-bool effect_to_file(LSHandle *sh, LSMessage *message, void *data) {
-    printf("OK\n");
-    LSError lserror;
-    JSchemaInfo schemaInfo;
-    jvalue_ref parsed = {0}, value = {0};
-    jvalue_ref jobj = {0}, jreturnValue = {0};
-    const char *url = NULL;
-    char buf[BUF_SIZE] = {0, };
-
-    LSErrorInit(&lserror);
-
-    // Initialize schema
-    jschema_info_init (&schemaInfo, jschema_all(), NULL, NULL);
-
-    // get message from LS2 and parsing to make object
-    parsed = jdom_parse(j_cstr_to_buffer(LSMessageGetPayload(message)), DOMOPT_NOOPT, &schemaInfo);
-
-    if (jis_null(parsed)) {
-        j_release(&parsed);
-        return true;
-    }
-
-    // Get value from payload.input
-    value = jobject_get(parsed, j_cstr_to_buffer("url"));
-
-    // JSON Object to string without schema validation check
-    url = jvalue_tostring_simple(value);
-    printf("URL : %s\n", url);
-
-    objectDetectionPipeline(url);
-    /**
-     * JSON create test
-     */
-    jobj = jobject_create();
-    if (jis_null(jobj)) {
-        j_release(&jobj);
-        return true;
-    }
-
-    jreturnValue = jboolean_create(TRUE);
-    jobject_set(jobj, j_cstr_to_buffer("returnValue"), jreturnValue);
-
-    LSMessageReply(sh, message, jvalue_tostring_simple(jobj), &lserror);
-
-    j_release(&parsed);
-    return true;
-}
-
-bool stop_pipeline(LSHandle *sh, LSMessage *message, void *data) {
-    /* TODO */
-    return true;
-}
 
 // Register background service and initialize
 int main(int argc, char* argv[]) {

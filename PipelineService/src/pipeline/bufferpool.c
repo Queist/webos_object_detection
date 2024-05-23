@@ -1,3 +1,5 @@
+#include "bufferpool.h"
+
 static gboolean buffer_pool_start(GstBufferPool *pool) {
     /* TODO */
     return TRUE;
