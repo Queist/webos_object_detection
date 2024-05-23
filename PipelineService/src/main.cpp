@@ -22,6 +22,7 @@
 #include <luna-service2/lunaservice.h>
 #include <pbnjson.h>
 #include <PmLog.h>
+#include "pipeline/pipeline.cpp"
 
 // This service name
 #define SERVICE_NAME "com.balance.app.service"
