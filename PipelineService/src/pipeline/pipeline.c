@@ -1,4 +1,5 @@
 #include <gst/gst.h>
+#include <stdbool.h>
 
 static void on_pad_added (GstElement *element, GstPad *pad, gpointer data) {
     gchar *name;
