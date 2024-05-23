@@ -19,3 +19,6 @@ PipelineService/BUILD/
 **/.idea/
 
 **/cmake-build-debug/
+
+ReactApp/node_modules/
+ReactApp/build/
