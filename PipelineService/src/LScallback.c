@@ -35,7 +35,7 @@ bool effect_to_file(LSHandle *sh, LSMessage *message, void *data) {
     url = jvalue_tostring_simple(value);
     printf(url);
 
-    objectDetectionPipeline(url, true, 20);
+    objectDetectionPipeline(url, true, 10);
     /**
      * JSON create test
      */

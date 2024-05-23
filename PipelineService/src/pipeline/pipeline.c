@@ -3,28 +3,22 @@
 
 static void on_pad_added (GstElement *element, GstPad *pad, gpointer data) {
     gchar *name;
-    GstCaps * p_caps;
-    gchar * description;
-    GstElement *p_next;
+    GstPad *ghost_pad;
+    GstElement *bin = (GstElement *)data;
 
     name = gst_pad_get_name(pad);
     g_print("A new pad %s was created \n", name);
+    
+    ghost_pad = gst_element_get_static_pad(bin, "src");
 
-    p_caps = gst_pad_get_pad_template_caps (pad);
-
-    description = gst_caps_to_string(p_caps);
-    g_print("Caps for pad %s are %s\n", name, description);
-    g_free(description);
-
-    p_next = GST_ELEMENT(data);
-
-    if (!gst_element_link_pads(element, name, p_next, "sink")) {
-        g_print("Failed to link elements\n");
+    if (!gst_ghost_pad_set_target(GST_GHOST_PAD(ghost_pad), pad)) {
+        g_printerr("Failed to link elements\n");
     } else {
         g_print("Success to link elements\n");
     }
     /* Success on new pad 0, Fail on new pad 1. Maybe filesrc problem? */
 
+    gst_object_unref(ghost_pad);
     g_free(name);
 }
 
@@ -41,45 +35,234 @@ static void on_eos(GstBus *bus, GstMessage *message, gpointer user_data) {
 }
 
 GstElement *init_src_bin(bool is_file, const char  *url) {
-    /*TODO*/
-    return NULL;
+    GstElement *bin, *src, *decodebin; // don't need decodebin if using v4l2src as src
+    GstPad *src_pad, *ghost_src_pad;
+
+    bin = gst_bin_new("src_bin");
+
+    if (is_file) {
+        src = gst_element_factory_make("filesrc", "src");
+        g_object_set(src, "location", url, NULL);
+        decodebin = gst_element_factory_make("decodebin", "decodebin");
+
+        if (!src || !decodebin) {
+            gst_object_unref(bin);
+            return NULL;
+        }
+
+        gst_bin_add_many(GST_BIN(bin), src, decodebin, NULL);
+        if (!gst_element_link(src, decodebin)) {
+            gst_object_unref(bin);
+            return NULL;
+        }
+
+        ghost_src_pad = gst_ghost_pad_new_no_target("src", GST_PAD_SRC);
+        gst_element_add_pad(bin, ghost_src_pad);
+        if (!g_signal_connect(src, "pad-added", G_CALLBACK(on_pad_added), bin)) {
+            g_printerr("signal connect err\n");
+            gst_object_unref(bin);
+            return NULL;
+        }
+
+    } else {
+        src = gst_element_factory_make("v4l2src", "src");
+
+        if (!src) {
+            gst_object_unref(bin);
+            return NULL;
+        }
+
+        gst_bin_add(GST_BIN(bin), src);
+
+        src_pad = gst_element_get_static_pad(decodebin, "src");
+        ghost_src_pad = gst_ghost_pad_new("src", src_pad);
+        gst_element_add_pad(bin, ghost_src_pad);
+        gst_object_unref(GST_OBJECT(src_pad));
+    }
+
+    return bin;
 }
 
 GstElement *init_preprocess_bin() {
-    /*TODO*/
-    return NULL;
+    GstElement *bin, *videoconvert0, *videoscale0, *filter0;
+    GstPad *sink_pad, *ghost_sink_pad, *src_pad, *ghost_src_pad;
+    GstCaps *filtercaps0;
+
+    bin = gst_bin_new("preprocess_bin");
+
+    videoconvert0 = gst_element_factory_make("videoconvert", "videoconvert0");
+    videoscale0 = gst_element_factory_make("videoscale", "videoscale0");
+    filter0 = gst_element_factory_make ("capsfilter", "filter0");
+
+    filtercaps0 = gst_caps_new_simple("video/x-raw",
+                                      "width", G_TYPE_INT, 640,
+                                      "height", G_TYPE_INT, 480,
+                                      "format", G_TYPE_STRING, "RGB",
+            //"framerate", G_TYPE_STRING?, "30/1",
+                                      NULL);
+    g_object_set(filter0, "caps", filtercaps0, NULL);
+    gst_caps_unref (filtercaps0);
+
+    if (!videoconvert0 || !videoscale0 || !filter0) {
+        gst_object_unref(bin);
+        return NULL;
+    }
+
+    gst_bin_add_many(GST_BIN(bin), videoconvert0, videoscale0, filter0, NULL);
+    if (!gst_element_link_many(videoconvert0, videoscale0, filter0, NULL)) {
+        gst_object_unref(bin);
+        return NULL;
+    }
+
+    sink_pad = gst_element_get_static_pad(videoconvert0, "sink");
+    ghost_sink_pad = gst_ghost_pad_new("sink", sink_pad);
+    gst_element_add_pad(bin, ghost_sink_pad);
+    gst_object_unref(GST_OBJECT(sink_pad));
+
+    src_pad = gst_element_get_static_pad(filter0, "src");
+    ghost_src_pad = gst_ghost_pad_new("src", src_pad);
+    gst_element_add_pad(bin, ghost_src_pad);
+    gst_object_unref(GST_OBJECT(src_pad));
+
+    return bin;
 }
 
 GstElement *init_object_detection_bin() {
-    /*TODO*/
-    return NULL;
+    GstElement *bin, *videoscale1, *filter1, *tensor_converter, *tensor_transform, *tensor_filter, *tensor_decoder;
+    GstPad *sink_pad, *ghost_sink_pad, *src_pad, *ghost_src_pad;
+    GstCaps *filtercaps1;
+
+    bin = gst_bin_new("object_detection_bin");
+
+    videoscale1 = gst_element_factory_make("videoscale", "videoscale1");
+    filter1 = gst_element_factory_make ("capsfilter", "filter1");
+    tensor_converter = gst_element_factory_make("tensor_converter", "tensor_converter");
+    tensor_transform = gst_element_factory_make("tensor_transform", "tensor_transform");
+    tensor_filter = gst_element_factory_make("tensor_filter", "tensor_filter");
+    tensor_decoder = gst_element_factory_make("tensor_decoder", "tensor_decoder");
+    
+    filtercaps1 = gst_caps_new_simple("video/x-raw",
+                                      "width", G_TYPE_INT, 300,
+                                      "height", G_TYPE_INT, 300,
+                                      "format", G_TYPE_STRING, "RGB", NULL);
+    g_object_set(filter1, "caps", filtercaps1, NULL);
+    g_object_set(tensor_transform, "mode", 2, "option", "typecast:float32,add:-127.5,div:127.5", NULL);  // mode=arithmetic
+    g_object_set(tensor_filter, "framework", "tensorflow-lite", "model", "/home/root/tflite_model/ssd_mobilenet_v2_coco.tflite", NULL);  // path issue?
+    g_object_set(tensor_decoder, "mode", "bounding_boxes",
+                 "option1", "mobilenet-ssd",
+                 "option2", "/home/root/tflite_model/coco_labels_list.txt",
+                 "option3", "/home/root/tflite_model/box_priors.txt",
+                 "option4", "640:480",
+                 "option5", "300:300", NULL);  // path issue?
+
+    gst_caps_unref (filtercaps1);
+
+    if (!videoscale1 || !filter1 || !tensor_converter || !tensor_transform || !tensor_filter || !tensor_decoder) {
+        gst_object_unref(bin);
+        return NULL;
+    }
+
+    gst_bin_add_many(GST_BIN(bin), videoscale1, filter1, tensor_converter, tensor_transform, tensor_filter, tensor_decoder, NULL);
+    if (!gst_element_link_many(videoconvert1, filter1, tensor_converter, tensor_transform, tensor_filter, tensor_decoder, NULL)) {
+        gst_object_unref(bin);
+        return NULL;
+    }
+
+    sink_pad = gst_element_get_static_pad(videoscale1, "sink");
+    ghost_sink_pad = gst_ghost_pad_new("sink", sink_pad);
+    gst_element_add_pad(bin, ghost_sink_pad);
+    gst_object_unref(GST_OBJECT(sink_pad));
+
+    src_pad = gst_element_get_static_pad(tensor_decoder, "src");
+    ghost_src_pad = gst_ghost_pad_new("src", src_pad);
+    gst_element_add_pad(bin, ghost_src_pad);
+    gst_object_unref(GST_OBJECT(src_pad));
+
+    return bin;
 }
 
 GstElement *init_gl_effect_bin(int gl_effect) {
-    /*TODO*/
-    return NULL;
+    GstElement *bin, *videoconvert1, *videoscale2, *filter2, *glupload, *gleffects, *gldownload;
+    GstPad *sink_pad, *ghost_sink_pad, *src_pad, *ghost_src_pad;
+    GstCaps *filtercaps2;
+
+    bin = gst_bin_new("gl_effect_bin");
+
+    videoconvert1 = gst_element_factory_make("videoconvert", "videoconvert1");
+    videoscale2 = gst_element_factory_make("videoscale", "videoscale2");
+    filter2 = gst_element_factory_make ("capsfilter", "filter2");
+    glupload = gst_element_factory_make("glupload", "glupload");
+    gleffects = gst_element_factory_make("gleffects", "gleffects");
+    gldownload = gst_element_factory_make("gldownload", "gldownload");
+
+    filtercaps2 = gst_caps_new_simple("video/x-raw",
+                                      "width", G_TYPE_INT, 640,
+                                      "height", G_TYPE_INT, 480,
+                                      "format", G_TYPE_STRING, "RGBA", NULL);
+
+    g_object_set(filter2, "caps", filtercaps2, NULL);
+    g_object_set(gleffects, "effect", gl_effect, NULL);
+    gst_caps_unref (filtercaps2);
+
+    if (!videoconvert1 || !videoscale2 || !filter2 || !glupload || !gleffects || !gldownload) {
+        gst_object_unref(bin);
+        return NULL;
+    }
+
+    gst_bin_add_many(GST_BIN(bin), videoconvert1, videoscale2, filter2, glupload, gleffects, gldownload, NULL);
+    if (!gst_element_link_many(videoconvert1, videoscale2, filter2, glupload, gleffects, gldownload, NULL)) {
+        gst_object_unref(bin);
+        return NULL;
+    }
+
+    sink_pad = gst_element_get_static_pad(videoconvert1, "sink");
+    ghost_sink_pad = gst_ghost_pad_new("sink", sink_pad);
+    gst_element_add_pad(bin, ghost_sink_pad);
+    gst_object_unref(GST_OBJECT(sink_pad));
+
+    src_pad = gst_element_get_static_pad(gldownload, "src");
+    ghost_src_pad = gst_ghost_pad_new("src", src_pad);
+    gst_element_add_pad(bin, ghost_src_pad);
+    gst_object_unref(GST_OBJECT(src_pad));
+
+    return bin;
 }
 
 GstElement *init_sink_bin() {
-    /*TODO*/
-    return NULL;
+    GstElement *bin, *videoconvert2, *sink;
+    GstPad *sink_pad, *ghost_sink_pad;
+
+    bin = gst_bin_new("sink_bin");
+
+    videoconvert2 = gst_element_factory_make("videoconvert", "videoconvert2");
+    sink = gst_element_factory_make("autovideosink", "sink");
+
+    if (!videoconvert2 || !sink) {
+        gst_object_unref(bin);
+        return NULL;
+    }
+
+    gst_bin_add_many(GST_BIN(bin), videoconvert2, sink, NULL);
+    if (!gst_element_link(videoconvert2, sink)) {
+        gst_object_unref(bin);
+        return NULL;
+    }
+
+    sink_pad = gst_element_get_static_pad(videoconvert2, "sink");
+    ghost_sink_pad = gst_ghost_pad_new("sink", sink_pad);
+    gst_element_add_pad(bin, ghost_sink_pad);
+    gst_object_unref(GST_OBJECT(sink_pad));
+
+    return bin;
 }
 
 int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_effect) {
     // Elements declaration
-    GstElement *pipeline;
-    GstElement *src;
-    GstElement *decodebin;  // don't need if using v4l2src as src
-    GstElement *videoconvert0, *videoconvert1, *videoconvert2;
-    GstElement *videoscale0, *videoscale1, *videoscale2;
-    GstCaps *filtercaps0, *filtercaps1, *filtercaps2;
-    GstElement *filter0, *filter1, *filter2;
-    GstElement *tee;
-    GstElement *queue0, *queue1;
-    GstElement *tensor_converter, *tensor_transform, *tensor_filter, *tensor_decoder;
-    GstElement *compositor;
-    GstElement *sink;
-    GstElement *glupload, *gleffects, *gldownload;
+    GstElement *pipeline, *src_bin, *preprocess_bin, *object_detection_bin, *gl_effect_bin, *sink_bin;
+    GstElement *tee, *queue0, *queue1, *compositor;
+
+    bool isfile;
+    isfile = url ? true : false;
 
     GstBus *bus;
     GstMessage *msg_err;
@@ -91,99 +274,59 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
 
     // Create elements
     pipeline = gst_pipeline_new("obj_detection_pipeline");
-    src = gst_element_factory_make("filesrc", "src");
-    decodebin = gst_element_factory_make("decodebin", "decodebin");
-    videoconvert0 = gst_element_factory_make("videoconvert", "videoconvert0");
-    videoscale0 = gst_element_factory_make("videoscale", "videoscale0");
-    filter0 = gst_element_factory_make ("capsfilter", "filter0");
+    src_bin = init_src_bin(isfile, url);
+    preprocess_bin = init_preprocess_bin();
+    if (use_object_detection) {
+        object_detection_bin = init_object_detection_bin();
+    }
+    gl_effect_bin = init_gl_effect_bin(gl_effect);
+    sink_bin = init_sink_bin();
+
     tee = gst_element_factory_make("tee", "tee");
     queue0 = gst_element_factory_make("queue", "queue0");
-    videoscale1 = gst_element_factory_make("videoscale", "videoscale1");
-    filter1 = gst_element_factory_make ("capsfilter", "filter1");
-    tensor_converter = gst_element_factory_make("tensor_converter", "tensor_converter");
-    tensor_transform = gst_element_factory_make("tensor_transform", "tensor_transform");
-    tensor_filter = gst_element_factory_make("tensor_filter", "tensor_filter");
-    tensor_decoder = gst_element_factory_make("tensor_decoder", "tensor_decoder");
-    compositor = gst_element_factory_make("compositor", "compositor");
-    videoconvert1 = gst_element_factory_make("videoconvert", "videoconvert1");
-    sink = gst_element_factory_make("autovideosink", "sink");
     queue1 = gst_element_factory_make("queue", "queue1");
-    videoconvert2 = gst_element_factory_make("videoconvert", "videoconvert2");
-    videoscale2 = gst_element_factory_make("videoscale", "videoscale2");
-    filter2 = gst_element_factory_make ("capsfilter", "filter2");
-    glupload = gst_element_factory_make("glupload", "glupload");
-    gleffects = gst_element_factory_make("gleffects", "gleffects");
-    gldownload = gst_element_factory_make("gldownload", "gldownload");
-
-    // Create caps
-    filtercaps0 = gst_caps_new_simple("video/x-raw",
-                                      "width", G_TYPE_INT, 640,
-                                      "height", G_TYPE_INT, 480,
-                                      "format", G_TYPE_STRING, "RGB",
-            //"framerate", G_TYPE_STRING?, "30/1",
-                                      NULL);
-    filtercaps1 = gst_caps_new_simple("video/x-raw",
-                                      "width", G_TYPE_INT, 300,
-                                      "height", G_TYPE_INT, 300,
-                                      "format", G_TYPE_STRING, "RGB", NULL);
-    filtercaps2 = gst_caps_new_simple("video/x-raw",
-                                      "width", G_TYPE_INT, 640,
-                                      "height", G_TYPE_INT, 480,
-                                      "format", G_TYPE_STRING, "RGBA", NULL);
-
-    // Object set
-    g_object_set(src, "location", url, NULL);  // don't need if v4l2src
-    g_object_set(filter0, "caps", filtercaps0, NULL);
+    compositor = gst_element_factory_make("compositor", "compositor");
+    
     //g_object_set(tee, "name", "t", NULL);
     g_object_set(queue0, "leaky", 2, "max-size-buffers", 2, NULL);
-    g_object_set(filter1, "caps", filtercaps1, NULL);
-    g_object_set(tensor_transform, "mode", 2, "option", "typecast:float32,add:-127.5,div:127.5", NULL);  // mode=arithmetic
-    g_object_set(tensor_filter, "framework", "tensorflow-lite", "model", "/home/root/tflite_model/ssd_mobilenet_v2_coco.tflite", NULL);  // path issue?
-    g_object_set(tensor_decoder, "mode", "bounding_boxes",
-                 "option1", "mobilenet-ssd",
-                 "option2", "/home/root/tflite_model/coco_labels_list.txt",
-                 "option3", "/home/root/tflite_model/box_priors.txt",
-                 "option4", "640:480",
-                 "option5", "300:300", NULL);  // path issue?
     //g_object_set(compositor, "name", "mix", NULL);
     g_object_set(queue1, "leaky", 2, "max-size-buffers", 10, NULL);
-    g_object_set(filter2, "caps", filtercaps2, NULL);
-    g_object_set(gleffects, "effect", 10, NULL);  // effect=sepia  // change to custom effect here
 
-    gst_caps_unref (filtercaps0);
-    gst_caps_unref (filtercaps1);
-    gst_caps_unref (filtercaps2);
 
     // Check creation
-    if (!pipeline || !src || !decodebin || !videoconvert0 || !videoscale0 || !filter0 || !tee ||
-        !queue0 || !videoscale1 || !filter1 || !tensor_converter || !tensor_transform || !tensor_filter || !tensor_decoder ||
-        !compositor || !videoconvert1 || !sink ||
-        !queue1 || !videoconvert2 || !videoscale2 || !filter2 || !glupload || !gleffects || !gldownload) {
+    if (!pipeline || !src_bin || !preprocess_bin || !gl_effect_bin || !sink_bin || !tee || !queue0 || !queue1 || !compositor) {
+        g_printerr("Not all elements could be created.\n");
+        return -1;
+    }
+    if (use_object_detection && !object_detection_bin) {
         g_printerr("Not all elements could be created.\n");
         return -1;
     }
 
     // Add pipeline and elements
-    gst_bin_add_many(GST_BIN(pipeline), src, decodebin, videoconvert0, videoscale0, filter0, tee,
-                     queue0, videoscale1, filter1, tensor_converter, tensor_transform, tensor_filter, tensor_decoder, compositor, videoconvert1, sink,
-                     queue1, videoconvert2, videoscale2, filter2, glupload, gleffects, gldownload, NULL);
-
-    // Link decodebin - videoconvert    // Also don't need if v4l2src!
-    if(!g_signal_connect(decodebin, "pad-added", G_CALLBACK(on_pad_added), videoconvert0)) {
-        g_printerr("signal connect err\n");
-        gst_object_unref(pipeline);
-        return -1;
+    gst_bin_add_many(GST_BIN(pipeline), src_bin, preprocess_bin, gl_effect_bin, sink_bin, tee, queue0, queue1, compositor, NULL);
+    if (use_object_detection) {
+        gst_bin_add_many(GST_BIN(pipeline), object_detection_bin);
     }
 
     // Link elements
-    if (!gst_element_link(src, decodebin) ||
-        !gst_element_link_many(videoconvert0, videoscale0, filter0, tee, NULL) ||
-        !gst_element_link_many(tee, queue0, videoscale1, filter1, tensor_converter, tensor_transform, tensor_filter, tensor_decoder, compositor, videoconvert1, sink, NULL) ||  //not working??
-        !gst_element_link_many(tee, queue1, videoconvert2, videoscale2, filter2, glupload, gleffects, gldownload, compositor, NULL)) {
-        g_printerr("Elements could not be linked.\n");
-        gst_object_unref(pipeline);
-        return -1;
+    if (use_object_detection) {
+        if (!gst_element_link_many(src_bin, preprocess_bin, tee, NULL) ||
+        !gst_element_link_many(tee, queue0, object_detection_bin, compositor, NULL) ||
+        !gst_element_link_many(tee, queue1, gl_effect_bin, compositor, NULL) ||
+        !gst_element_link_many(compositor, sink_bin, NULL)) {
+            g_printerr("Elements could not be linked.\n");
+            gst_object_unref(pipeline);
+            return -1;
+        }
+    } else {
+        if (!gst_element_link_many(src_bin, preprocess_bin, gl_effect_bin, sink_bin, NULL)) {
+            g_printerr("Elements could not be linked.\n");
+            gst_object_unref(pipeline);
+            return -1;
+        }
     }
+    
 
     // Start playing
     ret = gst_element_set_state (pipeline, GST_STATE_PLAYING);
