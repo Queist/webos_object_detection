@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cmake_minimum_required(VERSION 2.8.7)
-project(nativeService C)
+project(nativeService CXX)
 
 # set link directory
 #link_directories(${CMAKE_SOURCE_DIR}/pkg_$ENV{ARCH}/lib)
@@ -54,11 +54,7 @@ include_directories(${GST_INCLUDE_DIRS})
 set(BIN_NAME objectDetect_service)
 
 set(SRC_LIST
-    ${CMAKE_SOURCE_DIR}/src/main.c
-        src/pipeline/pipeline.c
-        # src/utility.c
-        # src/pipeline/threadpool.c
-        # src/pipeline/bufferpool.c
+    ${CMAKE_SOURCE_DIR}/src/main.cpp
 )
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/pkg_$ENV{OECORE_TARGET_ARCH}/")
@@ -66,7 +62,7 @@ add_executable(${BIN_NAME} ${SRC_LIST})
 
 # ignore shared library
 set(CMAKE_EXE_LINKER_FLAGS "-Wl,--allow-shlib-undefined")
-set_target_properties(${BIN_NAME} PROPERTIES LINKER_LANGUAGE C)
+set_target_properties(${BIN_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 
 target_link_libraries (${BIN_NAME}
     ${GTHREAD2_LDFLAGS}

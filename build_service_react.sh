@@ -1,3 +1,4 @@
+source /usr/local/webos-sdk-x86_64/environment-setup-cortexa72-webos-linux
 cd ReactApp
 npm build
 cp appinfo.json build/

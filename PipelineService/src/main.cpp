@@ -24,6 +24,7 @@
 #include <pbnjson.h>
 #include "LScallback.h"
 #include "util.h"
+#include <PmLog.h>
 
 // This service name
 #define SERVICE_NAME "com.balance.app.service"
