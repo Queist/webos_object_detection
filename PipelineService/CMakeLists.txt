@@ -54,7 +54,11 @@ include_directories(${GST_INCLUDE_DIRS})
 set(BIN_NAME objectDetect_service)
 
 set(SRC_LIST
-    ${CMAKE_SOURCE_DIR}/src/main.cpp
+        ${CMAKE_SOURCE_DIR}/src/main.cpp
+        ${CMAKE_SOURCE_DIR}/src/LScallback.h
+        #${CMAKE_SOURCE_DIR}/src/util.h
+        #${CMAKE_SOURCE_DIR}/src/pipeline/bufferpool.h
+        #${CMAKE_SOURCE_DIR}/src/pipeline/threadpool.h
 )
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/pkg_$ENV{OECORE_TARGET_ARCH}/")
