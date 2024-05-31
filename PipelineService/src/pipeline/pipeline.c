@@ -98,7 +98,7 @@ GstElement *init_preprocess_bin() {
                                       "width", G_TYPE_INT, 640,
                                       "height", G_TYPE_INT, 480,
                                       "format", G_TYPE_STRING, "RGB",
-            //"framerate", G_TYPE_STRING?, "30/1",
+                                    //"framerate", G_TYPE_STRING?, "30/1",   //error occurs when using filesrc. idk why
                                       NULL);
     g_object_set(filter0, "caps", filtercaps0, NULL);
     gst_caps_unref (filtercaps0);
@@ -147,13 +147,13 @@ GstElement *init_object_detection_bin() {
                                       "format", G_TYPE_STRING, "RGB", NULL);
     g_object_set(filter1, "caps", filtercaps1, NULL);
     g_object_set(tensor_transform, "mode", 2, "option", "typecast:float32,add:-127.5,div:127.5", NULL);  // mode=arithmetic
-    g_object_set(tensor_filter, "framework", "tensorflow-lite", "model", "/home/root/tflite_model/ssd_mobilenet_v2_coco.tflite", NULL);  // path issue?
+    g_object_set(tensor_filter, "framework", "tensorflow-lite", "model", "/home/root/tflite_model/ssd_mobilenet_v2_coco.tflite", NULL);
     g_object_set(tensor_decoder, "mode", "bounding_boxes",
                  "option1", "mobilenet-ssd",
                  "option2", "/home/root/tflite_model/coco_labels_list.txt",
                  "option3", "/home/root/tflite_model/box_priors.txt",
                  "option4", "640:480",
-                 "option5", "300:300", NULL);  // path issue?
+                 "option5", "300:300", NULL);
 
     gst_caps_unref (filtercaps1);
 
@@ -287,9 +287,7 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
     queue1 = gst_element_factory_make("queue", "queue1");
     compositor = gst_element_factory_make("compositor", "compositor");
     
-    //g_object_set(tee, "name", "t", NULL);
     g_object_set(queue0, "leaky", 2, "max-size-buffers", 2, NULL);
-    //g_object_set(compositor, "name", "mix", NULL);
     g_object_set(queue1, "leaky", 2, "max-size-buffers", 10, NULL);
 
 
