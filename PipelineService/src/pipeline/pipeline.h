@@ -4,6 +4,11 @@
 #include <gst/gst.h>
 #include <stdbool.h>
 
+typedef struct {
+    gpointer data;
+    int priority;
+} DataPriority;
+
 static void on_pad_added (GstElement *element, GstPad *pad, gpointer data);
 static void on_stream_status(GstBus *bus, GstMessage *message, gpointer user_data);
 static void on_error(GstBus *bus, GstMessage *message, gpointer user_data);

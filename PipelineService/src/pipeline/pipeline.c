@@ -1,6 +1,9 @@
 #include <gst/gst.h>
 #include <stdbool.h>
 
+static GMainLoop* loop;
+static GstTaskPool *thread_pool;
+
 static void on_pad_added (GstElement *element, GstPad *pad, gpointer data) {
     gchar *name;
     GstPad *ghost_pad;
@@ -23,15 +26,69 @@ static void on_pad_added (GstElement *element, GstPad *pad, gpointer data) {
 }
 
 static void on_stream_status(GstBus *bus, GstMessage *message, gpointer user_data) {
-    /*TODO*/
+    GstStreamStatusType type;
+    GstElement *owner;
+    const GValue *val;
+    GstTask *task = NULL;
+
+    gst_message_parse_stream_status (message, &type, &owner);
+
+    val = gst_message_get_stream_status_object (message);
+
+    if (G_VALUE_TYPE (val) == GST_TYPE_TASK) {
+        task = g_value_get_object (val);
+    }
+
+    switch (type) {
+        case GST_STREAM_STATUS_TYPE_CREATE:
+            int priority = 0;
+            if (task) {
+                // Set priority here
+                if (g_strcmp0(GST_OBJECT_NAME(owner), "src_bin") == 0) {
+                    priority = 0;
+                } else if (g_strcmp0(GST_OBJECT_NAME(owner), "preprocess_bin") == 0) {
+                    priority = 1;
+                } else if (g_strcmp0(GST_OBJECT_NAME(owner), "object_detection_bin") == 0) {
+                    priority = 2;
+                } else if (g_strcmp0(GST_OBJECT_NAME(owner), "gl_effect_bin") == 0) {
+                    priority = 3;
+                } else if (g_strcmp0(GST_OBJECT_NAME(owner), "sink_bin") == 0) {
+                    priority = 4;
+                } else {
+                    g_printerr("Unknown owner\n");
+                }
+            }
+
+            // Store priority in user_data of task
+            DataPriority *dp = g_new0(DataPriority, 1);
+            dp->data = task->user_data;
+            dp->priority = priority;
+            task->user_data = dp;
+
+            gst_task_set_pool(task, thread_pool);
+            break;
+        default:
+            break;
+    }
 }
 
 static void on_error(GstBus *bus, GstMessage *message, gpointer user_data) {
-    /*TODO*/
+    GError *err;
+    gchar *debug_info;
+
+    gst_message_parse_error(message, &err, &debug_info);
+    g_printerr("Error received from element %s: %s\n",
+               GST_OBJECT_NAME (message->src), err->message);
+    g_printerr("Debugging information: %s\n",
+                debug_info ? debug_info : "none");
+
+    g_clear_error(&err);
+    g_free(debug_info);
+    g_main_loop_quit(loop);
 }
 
 static void on_eos(GstBus *bus, GstMessage *message, gpointer user_data) {
-    /*TODO*/
+    g_main_loop_quit(loop);
 }
 
 GstElement *init_src_bin(bool is_file, const char  *url) {
@@ -58,7 +115,7 @@ GstElement *init_src_bin(bool is_file, const char  *url) {
 
         ghost_src_pad = gst_ghost_pad_new_no_target("src", GST_PAD_SRC);
         gst_element_add_pad(bin, ghost_src_pad);
-        if (!g_signal_connect(src, "pad-added", G_CALLBACK(on_pad_added), bin)) {
+        if (!g_signal_connect(decodebin, "pad-added", G_CALLBACK(on_pad_added), bin)) {
             g_printerr("signal connect err\n");
             gst_object_unref(bin);
             return NULL;
@@ -265,12 +322,19 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
     isfile = url ? true : false;
 
     GstBus *bus;
-    GstMessage *msg_err;
-    GstMessage *msg_eos;
+    //GstMessage *msg_err;
+    //GstMessage *msg_eos;
     GstStateChangeReturn ret;
 
     // Initialize GStreamer
     gst_init(NULL, NULL);
+
+    // Initialize thread pool
+    thread_pool = pipeline_rt_pool_new();
+    if (!thread_pool) {
+        g_printerr("Failed to create thread pool.\n");
+        return -1;
+    }
 
     // Create elements
     pipeline = gst_pipeline_new("obj_detection_pipeline");
@@ -324,18 +388,33 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
             return -1;
         }
     }
-    
+
+
+    loop = g_main_loop_new(NULL, FALSE);
+
+    // Get bus
+    bus = gst_element_get_bus(pipeline);
+    gst_bus_enable_sync_message_emission(bus);
+    gst_bus_add_signal_watch(bus);
+
+    g_signal_connect(bus, "sync-message::stream-status",
+        (GCallback) on_stream_status, NULL);
+    g_signal_connect(bus, "message::error",
+        (GCallback) on_error, NULL);
+    g_signal_connect(bus, "message::eos",
+        (GCallback) on_eos, NULL);
 
     // Start playing
     ret = gst_element_set_state (pipeline, GST_STATE_PLAYING);
     if (ret == GST_STATE_CHANGE_FAILURE) {
-        g_printerr ("Unable to set the pipeline to the playing state. \n");
-        gst_object_unref (pipeline);
+        g_printerr("Unable to set the pipeline to the playing state. \n");
+        gst_object_unref(pipeline);
         return -1;
     }
 
-    // Wait until error or EOS
-    bus = gst_element_get_bus(pipeline);
+    g_main_loop_run(loop);
+
+    /*
     msg_err = gst_bus_timed_pop_filtered(bus, GST_CLOCK_TIME_NONE, GST_MESSAGE_ERROR);
     msg_eos = gst_bus_timed_pop_filtered (bus, GST_CLOCK_TIME_NONE,GST_MESSAGE_EOS);
 
@@ -363,6 +442,7 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
         gst_message_unref (msg_err);
         gst_message_unref (msg_eos);
     }
+    */
 
     gst_object_unref(bus);
     gst_element_set_state(pipeline, GST_STATE_NULL);

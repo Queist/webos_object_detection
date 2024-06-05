@@ -1,7 +1,14 @@
 #ifndef __THREADPOOL_H__
 #define __THREADPOOL_H__
 
-#include <gst/gst.h>
+//#include <gst/gst.h>
+#include <pthread.h>
+#include "pipeline.h"
+
+typedef struct
+{
+  pthread_t thread;
+} PipelineRTId;
 
 static void thread_pool_prepare(GstTaskPool *pool, GError **error);
 static void thread_pool_cleanup(GstTaskPool *pool);
