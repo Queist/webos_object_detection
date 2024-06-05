@@ -28,7 +28,6 @@
 
 // This service name
 #define SERVICE_NAME "com.balance.app.service"
-#define BUF_SIZE 64
 
 // Main loop for aliving background service
 GMainLoop *gmainLoop;

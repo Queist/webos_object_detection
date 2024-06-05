@@ -5,9 +5,9 @@
 #include "LScallback.h"
 #include "pipeline/pipeline.h"
 
+#define BUF_SIZE 64
 
 bool effect_to_file(LSHandle *sh, LSMessage *message, void *data) {
-    printf("OK");
     LSError lserror;
     JSchemaInfo schemaInfo;
     jvalue_ref parsed = {0}, value = {0};
@@ -33,7 +33,6 @@ bool effect_to_file(LSHandle *sh, LSMessage *message, void *data) {
 
     // JSON Object to string without schema validation check
     url = jvalue_tostring_simple(value);
-    printf(url);
 
     objectDetectionPipeline(url, true, 20);
     /**
