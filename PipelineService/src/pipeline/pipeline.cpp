@@ -217,7 +217,7 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
             g_printerr("Debugging information: %s\n",
                        debug_info ? debug_info : "none");
             PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0,
-                      PMLOGKFV("Error received from element", "%s", GST_OBJECT_NAME (msg_err->src)),
+                      PMLOGKFV("ErrorElement", "%s", GST_OBJECT_NAME (msg_err->src)),
                       PMLOGKFV("Message", "%s", err->message));
             g_clear_error(&err);
             g_free(debug_info);
