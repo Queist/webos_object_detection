@@ -7,11 +7,3 @@ bool parse_ls_message(LSMessage *message, const char *url, bool *od, int *gl_eff
     /* TODO */
     return true;
 }
-
-static PmLogContext getPmLogContext() {
-    static PmLogContext s_context = 0;
-    if (0 == s_context) {
-        PmLogGetContext("NativeService", &s_context);
-    }
-    return s_context;
-}
