@@ -5,5 +5,5 @@ cd BUILD
 cmake ..
 make
 cd ..
-ares-package ../App ./pkg_aarch64
+ares-package ../App ./pkg_x86_64
 cd ..

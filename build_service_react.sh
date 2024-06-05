@@ -9,5 +9,5 @@ cd BUILD
 cmake ..
 make
 cd ..
-ares-package ../ReactApp/build ./pkg_aarch64
+ares-package ../ReactApp/build ./pkg_x86_64
 cd ..
