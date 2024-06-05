@@ -1,5 +1,7 @@
 #include <gst/gst.h>
 #include <stdbool.h>
+#include <PmLog.h>
+#include "util.h"
 
 static void on_pad_added (GstElement *element, GstPad *pad, gpointer data) {
     gchar *name;
@@ -66,6 +68,7 @@ GstElement *init_sink_bin() {
 }
 
 int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_effect) {
+    PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, "pipeline called");
     // Elements declaration
     GstElement *pipeline;
     GstElement *src;
@@ -159,6 +162,7 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
         !queue0 || !videoscale1 || !filter1 || !tensor_converter || !tensor_transform || !tensor_filter || !tensor_decoder ||
         !compositor || !videoconvert1 || !sink ||
         !queue1 || !videoconvert2 || !videoscale2 || !filter2 || !glupload || !gleffects || !gldownload) {
+        PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, "Not all elements could be created.");
         g_printerr("Not all elements could be created.\n");
         return -1;
     }
@@ -170,6 +174,7 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
 
     // Link decodebin - videoconvert    // Also don't need if v4l2src!
     if(!g_signal_connect(decodebin, "pad-added", G_CALLBACK(on_pad_added), videoconvert0)) {
+        PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, "Not all elements could be created.");
         g_printerr("signal connect err\n");
         gst_object_unref(pipeline);
         return -1;
@@ -180,6 +185,7 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
         !gst_element_link_many(videoconvert0, videoscale0, filter0, tee, NULL) ||
         !gst_element_link_many(tee, queue0, videoscale1, filter1, tensor_converter, tensor_transform, tensor_filter, tensor_decoder, compositor, videoconvert1, sink, NULL) ||  //not working??
         !gst_element_link_many(tee, queue1, videoconvert2, videoscale2, filter2, glupload, gleffects, gldownload, compositor, NULL)) {
+        PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, "Elements could not be linked.");
         g_printerr("Elements could not be linked.\n");
         gst_object_unref(pipeline);
         return -1;
@@ -188,6 +194,7 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
     // Start playing
     ret = gst_element_set_state (pipeline, GST_STATE_PLAYING);
     if (ret == GST_STATE_CHANGE_FAILURE) {
+        PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, "Unable to set the pipeline to the playing state.");
         g_printerr ("Unable to set the pipeline to the playing state. \n");
         gst_object_unref (pipeline);
         return -1;
@@ -209,6 +216,9 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
                        GST_OBJECT_NAME (msg_err->src), err->message);
             g_printerr("Debugging information: %s\n",
                        debug_info ? debug_info : "none");
+            PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0,
+                      PMLOGKFV("Error received from element", "%s", GST_OBJECT_NAME (msg_err->src)),
+                      PMLOGKFV("Message", "%s", err->message));
             g_clear_error(&err);
             g_free(debug_info);
             //break;
@@ -226,6 +236,8 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
     gst_object_unref(bus);
     gst_element_set_state(pipeline, GST_STATE_NULL);
     gst_object_unref(pipeline);
+
+    PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, "Done");
 
     return 0;
 }
