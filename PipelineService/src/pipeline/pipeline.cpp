@@ -4,6 +4,35 @@
 static GMainLoop* loop;
 static GstTaskPool *thread_pool;
 
+// TODO: gst_buffer_... -> pipeline_buffer_...
+static gboolean custom_query_allocation(GstPad *pad, GstObject *parent, GstQuery *query) {
+    GstBufferPool *pool;
+    GstStructure *config;
+    guint size, min_buffers, max_buffers;
+
+    // Let the default handler process the query first
+    gboolean ret = gst_pad_query_default(pad, parent, query);
+
+    // Check if the query is an allocation query
+    if (GST_QUERY_TYPE(query) == GST_QUERY_ALLOCATION) {
+        // Create a new custom buffer pool
+        pool = gst_buffer_pool_new();  // Replace with your custom pool creation
+        size = 1024 * 1024;  // Example buffer size
+        min_buffers = 2;
+        max_buffers = 10;
+
+        config = gst_buffer_pool_get_config(pool);
+        gst_buffer_pool_config_set_params(config, NULL, size, min_buffers, max_buffers);
+        gst_buffer_pool_set_config(pool, config);
+
+        // Add the buffer pool to the allocation query
+        gst_query_add_allocation_pool(query, pool, size, min_buffers, max_buffers);
+        gst_object_unref(pool);
+    }
+
+    return ret;
+}
+
 static void on_pad_added (GstElement *element, GstPad *pad, gpointer data) {
     gchar *name;
     GstPad *ghost_pad;
@@ -26,7 +55,7 @@ static void on_pad_added (GstElement *element, GstPad *pad, gpointer data) {
 }
 
 static void on_bin_pad_added (GstElement *element, GstPad *pad, gpointer data) {
-
+    gst_pad_set_query_function(pad, custom_query_allocation);
 }
 
 static void on_stream_status(GstBus *bus, GstMessage *message, gpointer user_data) {
