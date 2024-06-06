@@ -19,10 +19,14 @@ static void on_pad_added (GstElement *element, GstPad *pad, gpointer data) {
     } else {
         g_print("Success to link elements\n");
     }
-    /* Success on new pad 0, Fail on new pad 1. Maybe filesrc problem? */
+    /* Success on new pad 0, Fail on new pad 1 when using filesrc */
 
     gst_object_unref(ghost_pad);
     g_free(name);
+}
+
+static void on_bin_pad_added (GstElement *element, GstPad *pad, gpointer data) {
+
 }
 
 static void on_stream_status(GstBus *bus, GstMessage *message, gpointer user_data) {
@@ -389,6 +393,15 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
         }
     }
 
+    // Set bufferpool for each bin
+    if (!g_signal_connect(src_bin, "pad-added", G_CALLBACK(on_bin_pad_added), NULL) ||
+    !g_signal_connect(preprocess_bin, "pad-added", G_CALLBACK(on_bin_pad_added), NULL) ||
+    !g_signal_connect(gl_effect_bin, "pad-added", G_CALLBACK(on_bin_pad_added), NULL) ||
+    !g_signal_connect(sink_bin, "pad-added", G_CALLBACK(on_bin_pad_added), NULL)) {
+        g_printerr("signal connect for bin err\n");
+        gst_object_unref(bin);
+        return -1;
+    }
 
     loop = g_main_loop_new(NULL, FALSE);
 
