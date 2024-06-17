@@ -36,9 +36,7 @@ bool effect_to_file(LSHandle *sh, LSMessage *message, void *data) {
     url = jvalue_tostring_simple(value);
 
     size_t length = strlen(url);
-    if (length >=2 && url[0] == '"' && url[length-1] == '"') {
-        url = std::string(url + 1, length - 2).c_str();
-    }
+    url = std::string(url + 1, length - 2).c_str();
 
     objectDetectionPipeline(url, true, 20);
     /**
