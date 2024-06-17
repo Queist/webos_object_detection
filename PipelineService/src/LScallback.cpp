@@ -3,7 +3,7 @@
 #include <string.h>
 #include <string>
 #include <stdbool.h>
-#include <future>
+#include <thread>
 #include "LScallback.h"
 #include "pipeline/pipeline.h"
 
@@ -39,7 +39,7 @@ bool effect_to_file(LSHandle *sh, LSMessage *message, void *data) {
     size_t length = strlen(url);
     url = std::string(url + 1, length - 2).c_str();
 
-    std::future<int> ignored = std::async(std::launch::async, objectDetectionPipeline, url, true, 20);
+    std::thread(objectDetectionPipeline, url, true, 20).detach();
     /**
      * JSON create test
      */
