@@ -140,7 +140,7 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
     g_object_set(src, "location", url, NULL);  // don't need if v4l2src
     g_object_set(filter0, "caps", filtercaps0, NULL);
     //g_object_set(tee, "name", "t", NULL);
-    g_object_set(queue0, "leaky", 2, "max-size-buffers", 2, NULL);
+    g_object_set(queue0, "leaky", 0, "max-size-buffers", 2, NULL);
     g_object_set(filter1, "caps", filtercaps1, NULL);
     g_object_set(tensor_transform, "mode", 2, "option", "typecast:float32,add:-127.5,div:127.5", NULL);  // mode=arithmetic
     g_object_set(tensor_filter, "framework", "tensorflow-lite", "model", "/home/root/tflite_model/ssd_mobilenet_v2_coco.tflite", NULL);  // path issue?
