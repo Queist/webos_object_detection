@@ -39,7 +39,7 @@ bool effect_to_file(LSHandle *sh, LSMessage *message, void *data) {
     size_t length = strlen(url);
 
     std::string parsed_url = std::string(url + 1, length - 2);
-    std::thread([parsed_url]() { objectDetectionPipeline(parsed_url, true, 20) }).detach();
+    std::thread([parsed_url]() { objectDetectionPipeline(parsed_url, true, 20); }).detach();
     /**
      * JSON create test
      */
