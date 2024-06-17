@@ -137,7 +137,7 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
                                       "format", G_TYPE_STRING, "RGBA", NULL);
 
     // Object set
-    g_object_set(src, "location", "trailer.mp4", NULL);  // don't need if v4l2src
+    g_object_set(src, "location", url, NULL);  // don't need if v4l2src
     g_object_set(filter0, "caps", filtercaps0, NULL);
     //g_object_set(tee, "name", "t", NULL);
     g_object_set(queue0, "leaky", 2, "max-size-buffers", 2, NULL);
