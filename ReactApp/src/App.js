@@ -61,7 +61,7 @@ function App() {
                         "service": "luna://com.balance.app.service",
                         "method": "file",
                         "parameters": {
-                            "uri": uri,
+                            "url": uri,
                             "objectDetection": useObjectDetection,
                             "glEffect": glEffect
                         },
