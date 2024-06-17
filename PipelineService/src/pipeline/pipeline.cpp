@@ -1,5 +1,6 @@
 #include <gst/gst.h>
 #include <stdbool.h>
+#include <string>
 #include <PmLog.h>
 #include "util.h"
 
@@ -67,9 +68,10 @@ GstElement *init_sink_bin() {
     return NULL;
 }
 
-int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_effect) {
+int objectDetectionPipeline(std::string &&url, bool use_object_detection, int gl_effect) {
+    const char *c_url = url.c_str();
     PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, "pipeline called");
-    PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, url);
+    PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, c_url);
 
     // Elements declaration
     GstElement *pipeline;
@@ -137,7 +139,7 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
                                       "format", G_TYPE_STRING, "RGBA", NULL);
 
     // Object set
-    g_object_set(src, "location", url, NULL);  // don't need if v4l2src
+    g_object_set(src, "location", c_url, NULL);  // don't need if v4l2src
     g_object_set(filter0, "caps", filtercaps0, NULL);
     //g_object_set(tee, "name", "t", NULL);
     g_object_set(queue0, "leaky", 0, "max-size-buffers", 2, NULL);
