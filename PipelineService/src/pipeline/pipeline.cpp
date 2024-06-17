@@ -202,6 +202,8 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
         return -1;
     }
 
+    PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, "after playing");
+
     // Wait until error or EOS
     bus = gst_element_get_bus(pipeline);
     msg_err = gst_bus_timed_pop_filtered(bus, GST_CLOCK_TIME_NONE, GST_MESSAGE_ERROR);
@@ -209,6 +211,7 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
 
     // Error handling
     if (msg_err != NULL || msg_eos != NULL) {
+        PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, "ready to done");
         GError *err;
         gchar *debug_info;
 
