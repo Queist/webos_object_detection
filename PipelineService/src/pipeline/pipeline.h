@@ -15,6 +15,6 @@ GstElement *init_object_detection_bin();
 GstElement *init_gl_effect_bin(int gl_effect);
 GstElement *init_sink_bin();
 
-int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_effect);
+int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_effect);
 
 #endif // __PIPELINE_H__
