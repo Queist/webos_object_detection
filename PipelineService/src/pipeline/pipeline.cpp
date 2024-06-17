@@ -68,7 +68,7 @@ GstElement *init_sink_bin() {
     return NULL;
 }
 
-int objectDetectionPipeline(std::string &&url, bool use_object_detection, int gl_effect) {
+int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_effect) {
     const char *c_url = url.c_str();
     PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, "pipeline called");
     PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, c_url);
