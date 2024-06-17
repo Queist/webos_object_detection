@@ -1,6 +1,7 @@
 #include <luna-service2/lunaservice.h>
 #include <pbnjson.h>
 #include <string.h>
+#include <string>
 #include <stdbool.h>
 #include "LScallback.h"
 #include "pipeline/pipeline.h"
@@ -33,6 +34,11 @@ bool effect_to_file(LSHandle *sh, LSMessage *message, void *data) {
 
     // JSON Object to string without schema validation check
     url = jvalue_tostring_simple(value);
+
+    size_t length = strlen(str);
+    if (length >=2 && url[0] == '"' && url[length-1] == '"') {
+        url = std::string(url + 1, length - 2).c_str();
+    }
 
     objectDetectionPipeline(url, true, 20);
     /**
