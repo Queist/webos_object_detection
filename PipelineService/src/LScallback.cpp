@@ -4,7 +4,6 @@
 #include <string>
 #include <stdbool.h>
 #include <thread>
-#include <utility>
 #include "LScallback.h"
 #include "pipeline/pipeline.h"
 
@@ -39,7 +38,8 @@ bool effect_to_file(LSHandle *sh, LSMessage *message, void *data) {
 
     size_t length = strlen(url);
 
-    std::thread(objectDetectionPipeline, std::string(url + 1, length - 2), true, 20).detach();
+    var parsed = std::string(url + 1, length - 2);
+    std::thread([parsed]() { objectDetectionPipeline(parsed, true, 20) }).detach();
     /**
      * JSON create test
      */
