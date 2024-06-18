@@ -34,8 +34,7 @@ bool parse_ls_message(LSMessage *message, std::string &url, bool &od, int &gl_ef
     }
 
     if (!request["url"].isNull()) {
-        std::string tmp = request["url"].asString();
-        url = tmp.substr(1, tmp.size() - 2);
+        url = request["url"].asString();
     } else {
         return false;
     }
