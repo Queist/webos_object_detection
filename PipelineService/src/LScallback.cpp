@@ -16,18 +16,10 @@ bool effect_to_file(LSHandle *sh, LSMessage *message, void *data) {
 
     //TODO : handling error with LSError
 
-    std::string url;
-    bool od;
-    int gl_effect;
-    if (!parse_ls_message(message, url, od, gl_effect))
-        return true;
-
-    std::thread([parsed_url]() { objectDetectionPipeline(parsed_url, od, gl_effect); }).detach();
-
     /**
      * JSON create test
      */
-    jvalue_ref jobj = {0};
+    jvalue_ref jobj = {0}, jreturnValue = {0};
 
     jobj = jobject_create();
     if (jis_null(jobj)) {
@@ -35,13 +27,23 @@ bool effect_to_file(LSHandle *sh, LSMessage *message, void *data) {
         return true;
     }
 
-    jvalue_ref jreturnValue = {0};
+    std::string url;
+    bool od;
+    int gl_effect;
+    if (!parse_ls_message(message, url, od, gl_effect)) {
+        jreturnValue = jboolean_create(FALSE);
+        jobject_set(jobj, j_cstr_to_buffer("complete"), jreturnValue);
+
+        LSMessageReply(sh, message, jvalue_tostring_simple(jobj), &lserror);
+        return true;
+    }
+
+    std::thread([url, od, gl_effect]() { objectDetectionPipeline(url, od, gl_effect); }).detach();
+
     jreturnValue = jboolean_create(TRUE);
-    jobject_set(jobj, j_cstr_to_buffer("returnValue"), jreturnValue);
+    jobject_set(jobj, j_cstr_to_buffer("complete"), jreturnValue);
 
     LSMessageReply(sh, message, jvalue_tostring_simple(jobj), &lserror);
-
-    j_release(&parsed);
     return true;
 }
 
