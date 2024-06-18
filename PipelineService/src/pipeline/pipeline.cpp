@@ -2,6 +2,8 @@
 #include <stdbool.h>
 
 static GMainLoop* loop;
+
+/*
 static GstTaskPool *thread_pool;
 
 // TODO: gst_buffer_... -> pipeline_buffer_...
@@ -32,6 +34,7 @@ static gboolean custom_query_allocation(GstPad *pad, GstObject *parent, GstQuery
 
     return ret;
 }
+*/
 
 static void on_pad_added (GstElement *element, GstPad *pad, gpointer data) {
     gchar *name;
@@ -59,9 +62,11 @@ static void on_pad_added (GstElement *element, GstPad *pad, gpointer data) {
     g_free(name);
 }
 
+/*
 static void on_bin_pad_added (GstElement *element, GstPad *pad, gpointer data) {
     gst_pad_set_query_function(pad, custom_query_allocation);
 }
+
 
 static void on_stream_status(GstBus *bus, GstMessage *message, gpointer user_data) {
     GstStreamStatusType type;
@@ -109,6 +114,7 @@ static void on_stream_status(GstBus *bus, GstMessage *message, gpointer user_dat
             break;
     }
 }
+*/
 
 static void on_error(GstBus *bus, GstMessage *message, gpointer user_data) {
     GError *err;
@@ -370,12 +376,14 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
     // Initialize GStreamer
     gst_init(NULL, NULL);
 
+/*
     // Initialize thread pool
     thread_pool = pipeline_rt_pool_new();
     if (!thread_pool) {
         g_printerr("Failed to create thread pool.\n");
         return -1;
     }
+*/
 
     // Create elements
     pipeline = gst_pipeline_new("obj_detection_pipeline");
@@ -393,7 +401,7 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
     compositor = gst_element_factory_make("compositor", "compositor");
     
     // Set queue properties  //TODO
-    g_object_set(queue0, "leaky", 2, "max-size-buffers", 2, NULL);
+    g_object_set(queue0, "leaky", 0, "max-size-buffers", 2, NULL);
     g_object_set(queue1, "leaky", 2, "max-size-buffers", 10, NULL);
 
 
@@ -430,6 +438,7 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
         }
     }
 
+/*
     // Set bufferpool for each bin
     if (!g_signal_connect(src_bin, "pad-added", G_CALLBACK(on_bin_pad_added), NULL) ||
     !g_signal_connect(preprocess_bin, "pad-added", G_CALLBACK(on_bin_pad_added), NULL) ||
@@ -439,6 +448,7 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
         gst_object_unref(bin);
         return -1;
     }
+*/
 
     loop = g_main_loop_new(NULL, FALSE);
 
@@ -447,12 +457,12 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
     gst_bus_enable_sync_message_emission(bus);
     gst_bus_add_signal_watch(bus);
 
+/*
     g_signal_connect(bus, "sync-message::stream-status",
         (GCallback) on_stream_status, NULL);
-    g_signal_connect(bus, "message::error",
-        (GCallback) on_error, NULL);
-    g_signal_connect(bus, "message::eos",
-        (GCallback) on_eos, NULL);
+*/
+    g_signal_connect(bus, "message::error", (GCallback) on_error, NULL);
+    g_signal_connect(bus, "message::eos", (GCallback) on_eos, NULL);
 
     // Start playing
     ret = gst_element_set_state (pipeline, GST_STATE_PLAYING);

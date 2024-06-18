@@ -1,4 +1,4 @@
-source /usr/local/webos-sdk-x86_64/environment-setup-cortexa72-webos-linux
+source /usr/local/webos-sdk-x86_64/environment-setup-core2-64-webos-linux
 cd PipelineService
 mkdir BUILD
 cd BUILD
