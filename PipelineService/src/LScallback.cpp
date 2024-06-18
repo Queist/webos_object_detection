@@ -6,49 +6,36 @@
 #include <thread>
 #include "LScallback.h"
 #include "pipeline/pipeline.h"
+#include "util.h"
 
 #define BUF_SIZE 64
 
 bool effect_to_file(LSHandle *sh, LSMessage *message, void *data) {
     LSError lserror;
-    JSchemaInfo schemaInfo;
-    jvalue_ref parsed = {0}, value = {0};
-    jvalue_ref jobj = {0}, jreturnValue = {0};
-    const char *url = NULL;
-    char buf[BUF_SIZE] = {0, };
-
     LSErrorInit(&lserror);
 
-    // Initialize schema
-    jschema_info_init (&schemaInfo, jschema_all(), NULL, NULL);
+    //TODO : handling error with LSError
 
-    // get message from LS2 and parsing to make object
-    parsed = jdom_parse(j_cstr_to_buffer(LSMessageGetPayload(message)), DOMOPT_NOOPT, &schemaInfo);
-
-    if (jis_null(parsed)) {
-        j_release(&parsed);
+    std::string url;
+    bool od;
+    int gl_effect;
+    if (!parse_ls_message(message, url, od, gl_effect))
         return true;
-    }
 
-    // Get value from payload.input
-    value = jobject_get(parsed, j_cstr_to_buffer("url"));
+    std::thread([parsed_url]() { objectDetectionPipeline(parsed_url, od, gl_effect); }).detach();
 
-    // JSON Object to string without schema validation check
-    url = jvalue_tostring_simple(value);
-
-    size_t length = strlen(url);
-
-    std::string parsed_url = std::string(url + 1, length - 2);
-    std::thread([parsed_url]() { objectDetectionPipeline(parsed_url, true, 20); }).detach();
     /**
      * JSON create test
      */
+    jvalue_ref jobj = {0};
+
     jobj = jobject_create();
     if (jis_null(jobj)) {
         j_release(&jobj);
         return true;
     }
 
+    jvalue_ref jreturnValue = {0};
     jreturnValue = jboolean_create(TRUE);
     jobject_set(jobj, j_cstr_to_buffer("returnValue"), jreturnValue);
 

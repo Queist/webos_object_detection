@@ -4,9 +4,11 @@
 #include <luna-service2/lunaservice.h>
 #include <pbnjson.h>
 #include <PmLog.h>
+#include <string>
 #include "util.h"
 
-bool parse_ls_message(LSMessage *message, const char *url, bool *od, int *gl_effect);
+bool parse_ls_message(LSMessage *message, std::string &url, bool &od, int &gl_effect);
+
 static PmLogContext getPmLogContext() {
     static PmLogContext s_context = 0;
     if (0 == s_context) {
