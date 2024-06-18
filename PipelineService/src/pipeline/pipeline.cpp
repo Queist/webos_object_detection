@@ -187,8 +187,8 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
     // Link elements
     if (!gst_element_link(src, decodebin) ||
         !gst_element_link_many(videoconvert0, videoscale0, filter0, tee, NULL) ||
-        !gst_element_link_many(tee, queue0, videoscale1, filter1, tensor_converter, tensor_transform, tensor_filter, tensor_decoder, compositor, videoconvert1, sink, NULL) ||  //not working??
-        !gst_element_link_many(tee, queue1, videoconvert2, videoscale2, filter2, glupload, gleffects, gldownload, compositor, NULL)) {
+        !gst_element_link_many(tee, queue1, videoconvert2, videoscale2, filter2, glupload, gleffects, gldownload, compositor, NULL) ||
+        !gst_element_link_many(tee, queue0, videoscale1, filter1, tensor_converter, tensor_transform, tensor_filter, tensor_decoder, compositor, videoconvert1, sink, NULL)) {
         PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, "Elements could not be linked.");
         g_printerr("Elements could not be linked.\n");
         gst_object_unref(pipeline);
