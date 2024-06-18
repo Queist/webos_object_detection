@@ -296,7 +296,7 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
     GstElement *tee, *queue0, *queue1, *compositor;
 
     bool isfile;
-    isfile = url.empty() ? true : false;
+    isfile = !url.empty() ? true : false;
 
     GstBus *bus;
     GstMessage *msg;
