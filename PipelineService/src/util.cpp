@@ -28,7 +28,7 @@ bool parse_ls_message(LSMessage *message, std::string &url, bool &od, int &gl_ef
     }
 
     if (request["glEffect"].isNumber()) {
-        gl_effect = request["glEffect"].asNumber();
+        gl_effect = request["glEffect"].asNumber<int32_t>();
     } else {
         return false;
     }
