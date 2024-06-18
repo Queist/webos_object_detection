@@ -33,8 +33,8 @@ include(FindPkgConfig)
 pkg_check_modules(GTHREAD2 REQUIRED gthread-2.0)
 include_directories(${GTHREAD2_INCLUDE_DIRS})
 
-pkg_check_modules(PBNJSON REQUIRED pbnjson_c)
-include_directories(${PBNJSON_INCLUDE_DIRS})
+pkg_check_modules(PBNJSON_CPP REQUIRED pbnjson_cpp)
+include_directories(${PBNJSON_CPP_INCLUDE_DIRS})
 
 # -- check for glib 2.0
 pkg_check_modules(GLIB2 REQUIRED glib-2.0)
@@ -75,11 +75,11 @@ set_target_properties(${BIN_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 
 target_link_libraries (${BIN_NAME}
     ${GTHREAD2_LDFLAGS}
-    ${PBNJSON_LDFLAGS}
     ${LS2_LDFLAGS}
     ${GLIB2_LDFLAGS}
     ${PMLOG_LDFLAGS}
     ${GST_LIBRARIES}
+    ${PBNJSON_CPP_LDFLAGS}
 )
 
 file(COPY ${CMAKE_SOURCE_DIR}/services.json DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
