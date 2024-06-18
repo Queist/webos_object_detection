@@ -4,6 +4,8 @@
 #include <PmLog.h>
 #include "util.h"
 
+static GMainLoop* loop;
+
 static void on_pad_added (GstElement *element, GstPad *pad, gpointer data) {
     gchar *name;
     GstCaps * p_caps;
@@ -36,14 +38,25 @@ static void on_stream_status(GstBus *bus, GstMessage *message, gpointer user_dat
 }
 
 static void on_error(GstBus *bus, GstMessage *message, gpointer user_data) {
+    GError *err;
+    gchar *debug_info;
+
     g_message("received ERROR\n");
+
+    gst_message_parse_error(message, &err, &debug_info);
+    g_printerr("Error received from element %s: %s\n",
+               GST_OBJECT_NAME (message->src), err->message);
+    g_printerr("Debugging information: %s\n",
+                debug_info ? debug_info : "none");
+
+    g_clear_error(&err);
+    g_free(debug_info);
     g_main_loop_quit(loop);
 }
 
 static void on_eos(GstBus *bus, GstMessage *message, gpointer user_data) {
     g_message("finished on EOS\n");
     g_main_loop_quit(loop);
-}
 }
 
 GstElement *init_src_bin(bool is_file, const char  *url) {
@@ -115,7 +128,7 @@ GstElement *init_preprocess_bin() {
                                       "width", G_TYPE_INT, 640,
                                       "height", G_TYPE_INT, 480,
                                       "format", G_TYPE_STRING, "RGB",
-            //"framerate", G_TYPE_STRING?, "30/1",
+                                    //"framerate", G_TYPE_STRING?, "30/1",
                                       NULL);
     g_object_set(filter0, "caps", filtercaps0, NULL);
     gst_caps_unref (filtercaps0);
@@ -164,13 +177,13 @@ GstElement *init_object_detection_bin() {
                                       "format", G_TYPE_STRING, "RGB", NULL);
     g_object_set(filter1, "caps", filtercaps1, NULL);
     g_object_set(tensor_transform, "mode", 2, "option", "typecast:float32,add:-127.5,div:127.5", NULL);  // mode=arithmetic
-    g_object_set(tensor_filter, "framework", "tensorflow-lite", "model", "/mnt/tflite_model/ssd_mobilenet_v2_coco.tflite", NULL);  // path issue?
+    g_object_set(tensor_filter, "framework", "tensorflow-lite", "model", "/home/root/tflite_model/ssd_mobilenet_v2_coco.tflite", NULL);  // path issue?
     g_object_set(tensor_decoder, "mode", "bounding_boxes",
                  "option1", "mobilenet-ssd",
-                 "option2", "/mnt/tflite_model/coco_labels_list.txt",
-                 "option3", "/mnt/tflite_model/box_priors.txt",
+                 "option2", "/home/root/tflite_model/coco_labels_list.txt",
+                 "option3", "/home/root/tflite_model/box_priors.txt",
                  "option4", "640:480",
-                 "option5", "300:300", NULL);  // path issue?
+                 "option5", "300:300", NULL);
 
     gst_caps_unref (filtercaps1);
 
@@ -279,7 +292,7 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
     PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, c_url);
 
     // Elements declaration
-   GstElement *pipeline, *src_bin, *preprocess_bin, *object_detection_bin, *gl_effect_bin, *sink_bin;
+    GstElement *pipeline, *src_bin, *preprocess_bin, *object_detection_bin, *gl_effect_bin, *sink_bin;
     GstElement *tee, *queue0, *queue1, *compositor;
 
     bool isfile;
@@ -308,9 +321,9 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
     compositor = gst_element_factory_make("compositor", "compositor");
 
      //g_object_set(tee, "name", "t", NULL);
-    g_object_set(queue0, "leaky", 2, "max-size-buffers", 2, NULL);
+    g_object_set(queue0, "leaky", 0, "max-size-buffers", 2, NULL);
     //g_object_set(compositor, "name", "mix", NULL);
-    g_object_set(queue1, "leaky", 0, "max-size-buffers", 10, NULL);
+    g_object_set(queue1, "leaky", 2, "max-size-buffers", 10, NULL);
 
 
     // Check creation
@@ -336,8 +349,7 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
     if (use_object_detection) {
         if (!gst_element_link_many(src_bin, preprocess_bin, tee, NULL) ||
         !gst_element_link_many(tee, queue1, gl_effect_bin, compositor, NULL) ||
-        !gst_element_link_many(tee, queue0, object_detection_bin, compositor, NULL) ||
-        !gst_element_link_many(compositor, sink_bin, NULL)) {
+        !gst_element_link_many(tee, queue0, object_detection_bin, compositor, sink_bin, NULL)) {
             PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, "Elements could not be linked.");
             g_printerr("Elements could not be linked.\n");
             gst_object_unref(pipeline);
@@ -352,6 +364,14 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
         }
     }
 
+    loop = g_main_loop_new(NULL, FALSE);
+    bus = gst_pipeline_get_bus(GST_PIPELINE(pipeline));
+    gst_bus_enable_sync_message_emission(bus);
+    gst_bus_add_signal_watch(bus);
+
+    g_signal_connect(bus, "message::error", (GCallback) on_error, NULL);
+    g_signal_connect(bus, "message::eos", (GCallback) on_eos, NULL);
+
     // Start playing
     ret = gst_element_set_state(pipeline, GST_STATE_PLAYING);
     if (ret == GST_STATE_CHANGE_FAILURE) {
@@ -362,7 +382,7 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
     }
     if (ret == GST_STATE_CHANGE_ASYNC) {
         g_message("ASYNC\n");
-        GstMessage *msg = gst_bus_timed_pop_filtered(bus, GST_CLOCK_TIME_NONE, GST_MESSAGE_ASYNC_DONE);
+        msg = gst_bus_timed_pop_filtered(bus, GST_CLOCK_TIME_NONE, GST_MESSAGE_ASYNC_DONE);
         if (msg != NULL) {
             if (GST_MESSAGE_TYPE(msg) == GST_MESSAGE_ASYNC_DONE) {
                 PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, "ready to done");
