@@ -35,22 +35,27 @@ static gboolean custom_query_allocation(GstPad *pad, GstObject *parent, GstQuery
 
 static void on_pad_added (GstElement *element, GstPad *pad, gpointer data) {
     gchar *name;
-    GstPad *ghost_pad;
-    GstElement *bin = (GstElement *)data;
+    GstCaps * p_caps;
+    gchar * description;
+    GstElement *p_next;
 
     name = gst_pad_get_name(pad);
     g_print("A new pad %s was created \n", name);
-    
-    ghost_pad = gst_element_get_static_pad(bin, "src");
 
-    if (!gst_ghost_pad_set_target(GST_GHOST_PAD(ghost_pad), pad)) {
-        g_printerr("Failed to link elements\n");
-    } else {
-        g_print("Success to link elements\n");
-    }
-    /* Success on new pad 0, Fail on new pad 1 when using filesrc */
+    p_caps = gst_pad_get_pad_template_caps (pad);
 
-    gst_object_unref(ghost_pad);
+    description = gst_caps_to_string(p_caps);
+    g_print("Caps for pad %s are %s\n", name, description);
+    g_free(description);
+
+    p_next = GST_ELEMENT(data);
+
+    if(!gst_element_link_pads(element, name, p_next, "sink"))
+    {
+        g_print("Failed to link elements\n");
+    } else g_print("Success to link elements\n");
+    /* Success on new pad 0, Fail on new pad 1. Maybe filesrc problem? */
+
     g_free(name);
 }
 
@@ -121,11 +126,12 @@ static void on_error(GstBus *bus, GstMessage *message, gpointer user_data) {
 }
 
 static void on_eos(GstBus *bus, GstMessage *message, gpointer user_data) {
+    g_message("finished on EOS\n");
     g_main_loop_quit(loop);
 }
 
 GstElement *init_src_bin(bool is_file, const char  *url) {
-    GstElement *bin, *src, *decodebin; // don't need decodebin if using v4l2src as src
+    GstElement *bin, *src, *decodebin, *identity; // don't need decodebin if using v4l2src as src
     GstPad *src_pad, *ghost_src_pad;
 
     bin = gst_bin_new("src_bin");
@@ -134,25 +140,29 @@ GstElement *init_src_bin(bool is_file, const char  *url) {
         src = gst_element_factory_make("filesrc", "src");
         g_object_set(src, "location", url, NULL);
         decodebin = gst_element_factory_make("decodebin", "decodebin");
+        identity = gst_element_factory_make("identity", "identity");
 
-        if (!src || !decodebin) {
+        if (!src || !decodebin || !identity) {
             gst_object_unref(bin);
             return NULL;
         }
 
-        gst_bin_add_many(GST_BIN(bin), src, decodebin, NULL);
+        gst_bin_add_many(GST_BIN(bin), src, decodebin, identity, NULL);
         if (!gst_element_link(src, decodebin)) {
             gst_object_unref(bin);
             return NULL;
         }
 
-        ghost_src_pad = gst_ghost_pad_new_no_target("src", GST_PAD_SRC);
-        gst_element_add_pad(bin, ghost_src_pad);
-        if (!g_signal_connect(decodebin, "pad-added", G_CALLBACK(on_pad_added), bin)) {
+        if (!g_signal_connect(decodebin, "pad-added", G_CALLBACK(on_pad_added), identity)) {
             g_printerr("signal connect err\n");
             gst_object_unref(bin);
             return NULL;
         }
+
+        src_pad = gst_element_get_static_pad(identity, "src");
+        ghost_src_pad = gst_ghost_pad_new("src", src_pad);
+        gst_element_add_pad(bin, ghost_src_pad);
+        gst_object_unref(GST_OBJECT(src_pad));
 
     } else {
         src = gst_element_factory_make("v4l2src", "src");
@@ -355,8 +365,6 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
     isfile = url ? true : false;
 
     GstBus *bus;
-    //GstMessage *msg_err;
-    //GstMessage *msg_eos;
     GstStateChangeReturn ret;
 
     // Initialize GStreamer
@@ -384,6 +392,7 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
     queue1 = gst_element_factory_make("queue", "queue1");
     compositor = gst_element_factory_make("compositor", "compositor");
     
+    // Set queue properties  //TODO
     g_object_set(queue0, "leaky", 2, "max-size-buffers", 2, NULL);
     g_object_set(queue1, "leaky", 2, "max-size-buffers", 10, NULL);
 
@@ -407,9 +416,8 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
     // Link elements
     if (use_object_detection) {
         if (!gst_element_link_many(src_bin, preprocess_bin, tee, NULL) ||
-        !gst_element_link_many(tee, queue0, object_detection_bin, compositor, NULL) ||
         !gst_element_link_many(tee, queue1, gl_effect_bin, compositor, NULL) ||
-        !gst_element_link_many(compositor, sink_bin, NULL)) {
+        !gst_element_link_many(tee, queue0, object_detection_bin, compositor, sink_bin, NULL)) {
             g_printerr("Elements could not be linked.\n");
             gst_object_unref(pipeline);
             return -1;
@@ -455,36 +463,6 @@ int objectDetectionPipeline(const char *url, bool use_object_detection, int gl_e
     }
 
     g_main_loop_run(loop);
-
-    /*
-    msg_err = gst_bus_timed_pop_filtered(bus, GST_CLOCK_TIME_NONE, GST_MESSAGE_ERROR);
-    msg_eos = gst_bus_timed_pop_filtered (bus, GST_CLOCK_TIME_NONE,GST_MESSAGE_EOS);
-
-    // Error handling
-    if (msg_err != NULL || msg_eos != NULL) {
-        GError *err;
-        gchar *debug_info;
-
-        if (msg_err != NULL) {
-            gst_message_parse_error(msg_err, &err, &debug_info);
-            g_printerr("Error received from element %s: %s\n",
-                       GST_OBJECT_NAME (msg_err->src), err->message);
-            g_printerr("Debugging information: %s\n",
-                       debug_info ? debug_info : "none");
-            g_clear_error(&err);
-            g_free(debug_info);
-            //break;
-        } else if (msg_eos != NULL) {
-            g_print ("End-Of-Stream reached.\n");
-            //break;
-        } else {
-            g_printerr ("Unexpected message received.\n");
-            //break;
-        }
-        gst_message_unref (msg_err);
-        gst_message_unref (msg_eos);
-    }
-    */
 
     gst_object_unref(bus);
     gst_element_set_state(pipeline, GST_STATE_NULL);
