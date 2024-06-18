@@ -145,17 +145,17 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
     g_object_set(queue0, "leaky", 0, "max-size-buffers", 2, NULL);
     g_object_set(filter1, "caps", filtercaps1, NULL);
     g_object_set(tensor_transform, "mode", 2, "option", "typecast:float32,add:-127.5,div:127.5", NULL);  // mode=arithmetic
-    g_object_set(tensor_filter, "framework", "tensorflow-lite", "model", "/home/root/tflite_model/ssd_mobilenet_v2_coco.tflite", NULL);  // path issue?
+    g_object_set(tensor_filter, "framework", "tensorflow-lite", "model", "/home/root/tflite_model/ssd_mobilenet_v2_coco.tflite", NULL);
     g_object_set(tensor_decoder, "mode", "bounding_boxes",
                  "option1", "mobilenet-ssd",
                  "option2", "/home/root/tflite_model/coco_labels_list.txt",
                  "option3", "/home/root/tflite_model/box_priors.txt",
                  "option4", "640:480",
-                 "option5", "300:300", NULL);  // path issue?
+                 "option5", "300:300", NULL);
     //g_object_set(compositor, "name", "mix", NULL);
     g_object_set(queue1, "leaky", 2, "max-size-buffers", 10, NULL);
     g_object_set(filter2, "caps", filtercaps2, NULL);
-    g_object_set(gleffects, "effect", 10, NULL);  // effect=sepia  // change to custom effect here
+    g_object_set(gleffects, "effect", gl_effect, NULL);
 
     gst_caps_unref (filtercaps0);
     gst_caps_unref (filtercaps1);
