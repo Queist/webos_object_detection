@@ -59,7 +59,7 @@ static void on_eos(GstBus *bus, GstMessage *message, gpointer user_data) {
     g_main_loop_quit(loop);
 }
 
-GstElement *init_src_bin(bool is_file, std::string url) {
+GstElement *init_src_bin(bool is_file, const char *url) {
     GstElement *bin, *src, *decodebin, *identity; // don't need decodebin if using v4l2src as src
     GstPad *src_pad, *ghost_src_pad;
 
@@ -307,7 +307,7 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
 
     // Create elements
     pipeline = gst_pipeline_new("obj_detection_pipeline");
-    src_bin = init_src_bin(isfile, url);
+    src_bin = init_src_bin(isfile, c_url);
     preprocess_bin = init_preprocess_bin();
     if (use_object_detection) {
         object_detection_bin = init_object_detection_bin();
