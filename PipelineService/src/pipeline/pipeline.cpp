@@ -59,7 +59,7 @@ static void on_eos(GstBus *bus, GstMessage *message, gpointer user_data) {
     g_main_loop_quit(loop);
 }
 
-GstElement *init_src_bin(bool is_file, const char  *url) {
+GstElement *init_src_bin(bool is_file, std::string url) {
     GstElement *bin, *src, *decodebin, *identity; // don't need decodebin if using v4l2src as src
     GstPad *src_pad, *ghost_src_pad;
 
@@ -296,7 +296,7 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
     GstElement *tee, *queue0, *queue1, *compositor;
 
     bool isfile;
-    isfile = url ? true : false;
+    isfile = url.empty() ? true : false;
 
     GstBus *bus;
     GstMessage *msg;
@@ -389,8 +389,10 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
                 g_print("Async state change\n");
             }
             else {
+                GError *err;
+                gst_message_parse_error(msg, &err, NULL);
                 PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0,
-                      PMLOGKFV("ErrorElement", "%s", GST_OBJECT_NAME (msg_err->src)),
+                      PMLOGKFV("ErrorElement", "%s", GST_OBJECT_NAME (msg->src)),
                       PMLOGKFV("Message", "%s", err->message));
                 g_print("Async state change failed \n");
                 return -1;
