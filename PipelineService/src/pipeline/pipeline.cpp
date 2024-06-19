@@ -1,5 +1,4 @@
 #include <stdbool.h>
-#include <string>
 #include <PmLog.h>
 #include "util.h"
 #include "pipeline.h"

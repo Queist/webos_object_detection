@@ -2,6 +2,7 @@
 #define __PIPELINE_H__
 
 #include <gst/gst.h>
+#include <string>
 
 static void on_pad_added (GstElement *element, GstPad *pad, gpointer data);
 static void on_stream_status(GstBus *bus, GstMessage *message, gpointer user_data);
