@@ -61,7 +61,8 @@ set(SRC_LIST
         ${CMAKE_SOURCE_DIR}/src/pipeline/pipeline.cpp
         ${CMAKE_SOURCE_DIR}/src/util.h
         ${CMAKE_SOURCE_DIR}/src/util.cpp
-        #${CMAKE_SOURCE_DIR}/src/util.h
+        ${CMAKE_SOURCE_DIR}/src/pipeline/threadpool.h
+        ${CMAKE_SOURCE_DIR}/src/pipeline/threadpool.cpp
         #${CMAKE_SOURCE_DIR}/src/pipeline/bufferpool.h
         #${CMAKE_SOURCE_DIR}/src/pipeline/threadpool.h
 )
