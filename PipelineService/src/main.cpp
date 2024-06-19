@@ -44,7 +44,7 @@ LSMethod sampleMethods[] = {
 // Register background service and initialize
 int main(int argc, char* argv[]) {
     LSError lserror;
-    LSHandle  *handle = NULL;
+    LSHandle *handle = NULL;
     bool bRetVal = FALSE;
 
     LSErrorInit(&lserror);

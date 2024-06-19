@@ -7,6 +7,7 @@
 static GMainLoop* loop;
 static GstTaskPool *thread_pool;
 
+// Link dynamic pads
 static void on_pad_added (GstElement *element, GstPad *pad, gpointer data) {
     gchar *name;
     GstCaps * p_caps;
@@ -29,11 +30,12 @@ static void on_pad_added (GstElement *element, GstPad *pad, gpointer data) {
     } else {
         g_print("Success to link elements\n");
     }
-    /* Success on new pad 0, Fail on new pad 1. Maybe filesrc problem? */
+    /* filesrc fails on new pad 1 */
 
     g_free(name);
 }
 
+// Apply threadpool
 static void on_stream_status(GstBus *bus, GstMessage *message, gpointer user_data) {
     GstStreamStatusType type;
     GstElement *owner;
@@ -51,10 +53,10 @@ static void on_stream_status(GstBus *bus, GstMessage *message, gpointer user_dat
     switch (type) {
         case GST_STREAM_STATUS_TYPE_CREATE:
         {
-            int priority = 0;
+            gint priority = 0;
             if (task) {
                 g_print("Owner name: %s\n", GST_OBJECT_NAME(owner));
-                // TODO: Set priority here
+                // Set priority here
                 if (g_strcmp0(GST_OBJECT_NAME(owner), "queue0") == 0) {
                     priority = 50;
                 } else if (g_strcmp0(GST_OBJECT_NAME(owner), "queue1") == 0) {
@@ -67,11 +69,13 @@ static void on_stream_status(GstBus *bus, GstMessage *message, gpointer user_dat
             }
 
             // Store priority in user_data of task
-            DataPriority *dp = g_new0(DataPriority, 1);
-            dp->data = task->user_data;
-            dp->priority = priority;
-            task->user_data = dp;
+            DataPriorityFunc *dpf = g_new0(DataPriorityFunc, 1);
+            dpf->data = task->user_data;
+            dpf->priority = priority;
+            dpf->func = NULL;
+            task->user_data = dpf;
 
+            // Set task to thread pool
             gst_task_set_pool(task, thread_pool);
             break;
         }
@@ -108,7 +112,7 @@ GstElement *init_src_bin(bool is_file, const char *url) {
 
     bin = gst_bin_new("src_bin");
 
-    if (is_file) {
+    if (is_file) { // src from file
         src = gst_element_factory_make("filesrc", "src");
         g_object_set(src, "location", url, NULL);
         decodebin = gst_element_factory_make("decodebin", "decodebin");
@@ -137,7 +141,7 @@ GstElement *init_src_bin(bool is_file, const char *url) {
        gst_element_add_pad(bin, ghost_src_pad);
        gst_object_unref(GST_OBJECT(src_pad));
 
-    } else {
+    } else { // src from camera
         src = gst_element_factory_make("v4l2src", "src");
 
         if (!src) {
@@ -349,7 +353,7 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
     gst_init(NULL, NULL);
 
     // Initialize thread pool
-    thread_pool = pipeline_rt_pool_new();
+    thread_pool = pipeline_rt_pool_new(10); // set number of threads
     if (!thread_pool) {
         g_printerr("Failed to create thread pool.\n");
         return -1;
@@ -370,9 +374,7 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
     queue1 = gst_element_factory_make("queue", "queue1");
     compositor = gst_element_factory_make("compositor", "compositor");
 
-     //g_object_set(tee, "name", "t", NULL);
     g_object_set(queue0, "leaky", 0, "max-size-buffers", 2, NULL);
-    //g_object_set(compositor, "name", "mix", NULL);
     g_object_set(queue1, "leaky", 2, "max-size-buffers", 10, NULL);
 
 
@@ -413,6 +415,7 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
         }
     }
 
+    // Set up loop & bus
     loop = g_main_loop_new(NULL, FALSE);
     bus = gst_pipeline_get_bus(GST_PIPELINE(pipeline));
     gst_bus_enable_sync_message_emission(bus);
@@ -453,8 +456,10 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
     
     PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, "after playing");
 
+    // Run the loop
     g_main_loop_run(loop);
 
+    // Finished
     gst_element_set_state(pipeline, GST_STATE_NULL);
     gst_object_unref(bus);
     g_main_loop_unref(loop);
