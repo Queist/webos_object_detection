@@ -147,7 +147,7 @@ GstElement *init_src_bin(bool is_file, const char *url) {
 
         gst_bin_add(GST_BIN(bin), src);
 
-        src_pad = gst_element_get_static_pad(decodebin, "src");
+        src_pad = gst_element_get_static_pad(src, "src");
         ghost_src_pad = gst_ghost_pad_new("src", src_pad);
         gst_element_add_pad(bin, ghost_src_pad);
         gst_object_unref(GST_OBJECT(src_pad));
