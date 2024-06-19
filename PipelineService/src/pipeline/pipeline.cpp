@@ -1,10 +1,12 @@
-#include <gst/gst.h>
 #include <stdbool.h>
 #include <string>
 #include <PmLog.h>
 #include "util.h"
+#include "pipeline.h"
+#include "threadpool.h"
 
 static GMainLoop* loop;
+static GstTaskPool *thread_pool;
 
 static void on_pad_added (GstElement *element, GstPad *pad, gpointer data) {
     gchar *name;
@@ -34,7 +36,49 @@ static void on_pad_added (GstElement *element, GstPad *pad, gpointer data) {
 }
 
 static void on_stream_status(GstBus *bus, GstMessage *message, gpointer user_data) {
-    /*TODO*/
+    GstStreamStatusType type;
+    GstElement *owner;
+    const GValue *val;
+    GstTask *task = NULL;
+
+    gst_message_parse_stream_status (message, &type, &owner);
+    
+    val = gst_message_get_stream_status_object (message);
+
+    if (G_VALUE_TYPE (val) == GST_TYPE_TASK) {
+        task = (GstTask *) g_value_get_object(val);
+    }
+
+    switch (type) {
+        case GST_STREAM_STATUS_TYPE_CREATE:
+        {
+            int priority = 0;
+            if (task) {
+                g_print("Owner name: %s\n", GST_OBJECT_NAME(owner));
+                // TODO: Set priority here
+                if (g_strcmp0(GST_OBJECT_NAME(owner), "queue0") == 0) {
+                    priority = 50;
+                } else if (g_strcmp0(GST_OBJECT_NAME(owner), "queue1") == 0) {
+                    priority = 30;
+                } else if (g_strcmp0(GST_OBJECT_NAME(owner), "compositor") == 0) {
+                    priority = 20;
+                } else {
+                    priority = 10;
+                }
+            }
+
+            // Store priority in user_data of task
+            DataPriority *dp = g_new0(DataPriority, 1);
+            dp->data = task->user_data;
+            dp->priority = priority;
+            task->user_data = dp;
+
+            gst_task_set_pool(task, thread_pool);
+            break;
+        }
+        default:
+            break;
+    }
 }
 
 static void on_error(GstBus *bus, GstMessage *message, gpointer user_data) {
@@ -305,6 +349,13 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
     // Initialize GStreamer
     gst_init(NULL, NULL);
 
+    // Initialize thread pool
+    thread_pool = pipeline_rt_pool_new();
+    if (!thread_pool) {
+        g_printerr("Failed to create thread pool.\n");
+        return -1;
+    }
+
     // Create elements
     pipeline = gst_pipeline_new("obj_detection_pipeline");
     src_bin = init_src_bin(isfile, c_url);
@@ -344,7 +395,6 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
         gst_bin_add_many(GST_BIN(pipeline), object_detection_bin, NULL);
     }
 
-
     // Link elements
     if (use_object_detection) {
         if (!gst_element_link_many(src_bin, preprocess_bin, tee, NULL) ||
@@ -369,6 +419,7 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
     gst_bus_enable_sync_message_emission(bus);
     gst_bus_add_signal_watch(bus);
 
+    g_signal_connect(bus, "sync-message::stream-status", (GCallback) on_stream_status, NULL);
     g_signal_connect(bus, "message::error", (GCallback) on_error, NULL);
     g_signal_connect(bus, "message::eos", (GCallback) on_eos, NULL);
 
