@@ -5,17 +5,59 @@ import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import React, {useState} from "react";
-import {DropdownButton, ToggleButton, Dropdown} from "react-bootstrap";
+import {DropdownButton, ToggleButton, Dropdown, Stack} from "react-bootstrap";
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './App.css'
 
 let webOSBridge = new LS2Request();
-let glEffectsTitle = ["No GlEffect", ]
-let glEffectsButton = ["None", ]
+let glEffectsTitle = [
+    "No GlEffect",
+    "Mirror",
+    "Squeeze",
+    "Stretch",
+    "Tunnel",
+    "FishEye",
+    "Twirl",
+    "Bulge",
+    "Square",
+    "Heat",
+    "Sepia",
+    "Xpro",
+    "Lumaxpro",
+    "Xray",
+    "Sin",
+    "Glow",
+    "Sobel",
+    "Blur",
+    "Laplacian"
+]
+let glEffectsButton = [
+    "None",
+    "Mirror",
+    "Squeeze",
+    "Stretch",
+    "Tunnel",
+    "FishEye",
+    "Twirl",
+    "Bulge",
+    "Square",
+    "Heat",
+    "Sepia",
+    "Xpro",
+    "Lumaxpro",
+    "Xray",
+    "Sin",
+    "Glow",
+    "Sobel",
+    "Blur",
+    "Laplacian"
+]
 
 function ObjectDetectButton(props) {
   return (
       <>
-        <InputGroup className="mb-3">
-          <Button variant="outline-secondary" id="button-addon1" onClick={props.onClick}>
+        <InputGroup className="mb-3" style={{display: "flex", padding: "10px"}}>
+          <Button variant="outline-secondary" size="sm" id="button-addon1" onClick={props.onClick}>
             Use Local File
           </Button>
           <Form.Control
@@ -38,23 +80,29 @@ function App() {
     return (
         <div className="App">
             <header className="App-header">
-                <ToggleButton id="tbg-btn-1" type="checkbox" value={1} checked={useObjectDetection} onChange={() => setUseObjectDetection(!useObjectDetection)} >
-                    Use Object Detection
-                </ToggleButton>
+                <div style={{display: "flex", padding: "10px"}}>
+                    <ToggleButton size='sm' id="tbg-btn-1" type="checkbox" value={1} checked={useObjectDetection} onChange={() => setUseObjectDetection(!useObjectDetection)} >
+                        Use Object Detection
+                    </ToggleButton>
+                </div>
                 <DropdownButton
+                    style={{padding: "10px"}}
+                    className="btn-outline-secondary"
                     variant="outline-secondary"
                     title={glEffectsTitle[glEffect]}
                     id="dropdown-basic-button"
                 >
-                    {glEffectsButton.map((value, index) => {
-                        return (
-                            <Dropdown.Item href="#"
-                                           active={glEffect === index}
-                                           onClick={() => setGlEffect(index)}>
-                                {value}
-                            </Dropdown.Item>
-                        )
-                    })}
+                    <div style={{display: "flex", flexDirection: "column"}}>
+                        {glEffectsButton.map((value, index) => {
+                            return (
+                                <Dropdown.Item href="#"
+                                               active={glEffect === index}
+                                               onClick={() => setGlEffect(index)}>
+                                    {value}
+                                </Dropdown.Item>
+                            )
+                        })}
+                    </div>
                 </DropdownButton>
                 <ObjectDetectButton onClick={() => {
                     const lsRequest = {
@@ -76,23 +124,6 @@ function App() {
                     setUri(e.target.value)
                 }} uri={uri}
                 />
-                <Button variant="outline-secondary" id="button-addon1" onClick={() => {
-                    const lsRequest = {
-                        "service": "luna://com.balance.app.service",
-                        "method": "camera",
-                        "parameters": {
-                            "objectDetection": useObjectDetection,
-                            "glEffect": glEffect
-                        },
-                        "onSuccess": (ignored) => {
-                        },
-                        "onFailure": (ignored) => {
-                        }
-                    };
-                    webOSBridge.send(lsRequest)
-                }}>
-                    Use Camera
-                </Button>
             </header>
         </div>
     );
