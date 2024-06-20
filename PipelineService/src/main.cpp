@@ -37,8 +37,6 @@ LSMessage *message;
 
 LSMethod sampleMethods[] = {
     {"file", effect_to_file},
-    {"camera", effect_to_camera},
-    {"stop", stop_pipeline},
 };
 
 // Register background service and initialize

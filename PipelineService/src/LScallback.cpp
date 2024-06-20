@@ -47,12 +47,3 @@ bool effect_to_file(LSHandle *sh, LSMessage *message, void *data) {
     return true;
 }
 
-bool effect_to_camera(LSHandle* sh, LSMessage* message, void* data) {
-    /* TODO */
-    return true;
-}
-
-bool stop_pipeline(LSHandle *sh, LSMessage *message, void *data) {
-    /* TODO */
-    return true;
-}
