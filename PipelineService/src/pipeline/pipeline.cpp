@@ -115,47 +115,35 @@ GstElement *init_src_bin(bool is_file, const char *url) {
     if (is_file) { // src from file
         src = gst_element_factory_make("filesrc", "src");
         g_object_set(src, "location", url, NULL);
-        decodebin = gst_element_factory_make("decodebin", "decodebin");
-        identity = gst_element_factory_make("identity", "identity");
-
-        if (!src || !decodebin || !identity) {
-            gst_object_unref(bin);
-            return NULL;
-        }
-
-        gst_bin_add_many(GST_BIN(bin), src, decodebin, identity, NULL);
-        if (!gst_element_link(src, decodebin)) {
-            gst_object_unref(bin);
-            return NULL;
-        }
-
-        if(!g_signal_connect(decodebin, "pad-added", G_CALLBACK(on_pad_added), identity)) {
-            PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, "Not all elements could be created.");
-            g_printerr("signal connect err\n");
-            gst_object_unref(bin);
-            return NULL;
-        }
-
-       src_pad = gst_element_get_static_pad(identity, "src");
-       ghost_src_pad = gst_ghost_pad_new("src", src_pad);
-       gst_element_add_pad(bin, ghost_src_pad);
-       gst_object_unref(GST_OBJECT(src_pad));
-
     } else { // src from camera
         src = gst_element_factory_make("v4l2src", "src");
-
-        if (!src) {
-            gst_object_unref(bin);
-            return NULL;
-        }
-
-        gst_bin_add(GST_BIN(bin), src);
-
-        src_pad = gst_element_get_static_pad(src, "src");
-        ghost_src_pad = gst_ghost_pad_new("src", src_pad);
-        gst_element_add_pad(bin, ghost_src_pad);
-        gst_object_unref(GST_OBJECT(src_pad));
     }
+
+    decodebin = gst_element_factory_make("decodebin", "decodebin");
+    identity = gst_element_factory_make("identity", "identity");
+
+    if (!src || !decodebin || !identity) {
+        gst_object_unref(bin);
+        return NULL;
+    }
+
+    gst_bin_add_many(GST_BIN(bin), src, decodebin, identity, NULL);
+    if (!gst_element_link(src, decodebin)) {
+        gst_object_unref(bin);
+        return NULL;
+    }
+
+    if(!g_signal_connect(decodebin, "pad-added", G_CALLBACK(on_pad_added), identity)) {
+        PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, "Not all elements could be created.");
+        g_printerr("signal connect err\n");
+        gst_object_unref(bin);
+        return NULL;
+    }
+
+    src_pad = gst_element_get_static_pad(identity, "src");
+    ghost_src_pad = gst_ghost_pad_new("src", src_pad);
+    gst_element_add_pad(bin, ghost_src_pad);
+    gst_object_unref(GST_OBJECT(src_pad));
 
     return bin;
 }
