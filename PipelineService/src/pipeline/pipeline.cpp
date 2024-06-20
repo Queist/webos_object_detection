@@ -354,7 +354,9 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
     if (use_object_detection) {
         object_detection_bin = init_object_detection_bin();
     }
-    gl_effect_bin = init_gl_effect_bin(gl_effect);
+    if (gl_effect != 0) {
+        gl_effect_bin = init_gl_effect_bin(gl_effect);
+    }
     sink_bin = init_sink_bin();
 
     tee = gst_element_factory_make("tee", "tee");
@@ -367,7 +369,7 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
 
 
     // Check creation
-    if (!pipeline || !src_bin || !preprocess_bin || !gl_effect_bin || !sink_bin || !tee || !queue0 || !queue1 || !compositor) {
+    if (!pipeline || !src_bin || !preprocess_bin || !sink_bin || !tee || !queue0 || !queue1 || !compositor) {
         PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, "Not all elements could be created.");
         g_printerr("Not all elements could be created.\n");
         return -1;
@@ -377,29 +379,53 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
         g_printerr("Not all elements could be created.\n");
         return -1;
     }
+    if(gl_effect != 0 && !gl_effect_bin) {
+        g_printerr("Not all elements could be created.\n");
+        return -1;
+    }
 
     // Add pipeline and elements
-    gst_bin_add_many(GST_BIN(pipeline), src_bin, preprocess_bin, gl_effect_bin, sink_bin, tee, queue0, queue1, compositor, NULL);
+    gst_bin_add_many(GST_BIN(pipeline), src_bin, preprocess_bin, sink_bin, tee, queue0, queue1, compositor, NULL);
     if (use_object_detection) {
-        gst_bin_add_many(GST_BIN(pipeline), object_detection_bin, NULL);
+        gst_bin_add(GST_BIN(pipeline), object_detection_bin);
     }
+    if (gl_effect != 0) {
+        gst_bin_add(GST_BIN(pipeline), gl_effect_bin);
+    }
+
 
     // Link elements
     if (use_object_detection) {
-        if (!gst_element_link_many(src_bin, preprocess_bin, tee, NULL) ||
-        !gst_element_link_many(tee, queue1, gl_effect_bin, compositor, NULL) ||
-        !gst_element_link_many(tee, queue0, object_detection_bin, compositor, sink_bin, NULL)) {
-            PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, "Elements could not be linked.");
-            g_printerr("Elements could not be linked.\n");
-            gst_object_unref(pipeline);
-            return -1;
+        if(gl_effect != 0) {
+            if (!gst_element_link_many(src_bin, preprocess_bin, tee, NULL) ||
+            !gst_element_link_many(tee, queue1, gl_effect_bin, compositor, NULL) ||
+            !gst_element_link_many(tee, queue0, object_detection_bin, compositor, sink_bin, NULL)) {
+                g_printerr("Elements could not be linked.\n");
+                gst_object_unref(pipeline);
+                return -1;
+            }
+        } else {
+            if (!gst_element_link_many(src_bin, preprocess_bin, tee, NULL) ||
+            !gst_element_link_many(tee, queue1, compositor, NULL) ||
+            !gst_element_link_many(tee, queue0, object_detection_bin, compositor, sink_bin, NULL)) {
+                g_printerr("Elements could not be linked.\n");
+                gst_object_unref(pipeline);
+                return -1;
+            }
         }
     } else {
-        if (!gst_element_link_many(src_bin, preprocess_bin, gl_effect_bin, sink_bin, NULL)) {
-            PmLogInfo(getPmLogContext(), "GSTREAMER_PIPELINE", 0, "Elements could not be linked.");
-            g_printerr("Elements could not be linked.\n");
-            gst_object_unref(pipeline);
-            return -1;
+        if(gl_effect != 0) {
+            if (!gst_element_link_many(src_bin, preprocess_bin, gl_effect_bin, sink_bin, NULL)) {
+                g_printerr("Elements could not be linked.\n");
+                gst_object_unref(pipeline);
+                return -1;
+            }
+        } else {
+            if (!gst_element_link_many(src_bin, preprocess_bin, sink_bin, NULL)) {
+                g_printerr("Elements could not be linked.\n");
+                gst_object_unref(pipeline);
+                return -1;
+            }
         }
     }
 
