@@ -403,6 +403,14 @@ int objectDetectionPipeline(std::string url, bool use_object_detection, int gl_e
         }
     }
 
+    PipelineBufferPool *buffer_pool_preprocess, *buffer_pool_compositor, *buffer_pool_sink;
+    buffer_pool_preprocess = (PipelineBufferPool *)pipeline_buffer_pool_new("preprocess", 10000, 3, 10);
+    buffer_pool_compositor = (PipelineBufferPool *)pipeline_buffer_pool_new("compositor", 10000, 3, 10);
+    buffer_pool_sink = (PipelineBufferPool *)pipeline_buffer_pool_new("sink", 10000, 3, 10);
+    g_object_set(preprocess_bin, "buffer-pool", buffer_pool_preprocess, NULL);
+    g_object_set(compositor, "buffer-pool", buffer_pool_compositor, NULL);
+    g_object_set(sink_bin, "buffer-pool", buffer_pool_sink, NULL);
+
     // Set up loop & bus
     loop = g_main_loop_new(NULL, FALSE);
     bus = gst_pipeline_get_bus(GST_PIPELINE(pipeline));
